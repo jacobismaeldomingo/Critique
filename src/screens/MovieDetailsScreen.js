@@ -10,6 +10,7 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { Rating } from "@kolking/react-native-rating";
 import {
@@ -85,7 +86,7 @@ const MovieDetailsScreen = ({ route }) => {
 
   const handleSaveMovie = async () => {
     if (!category) {
-      alert("Please select a category first before adding to list.");
+      Alert.alert("Please select a category first before adding to list.");
       return;
     }
 
@@ -95,7 +96,7 @@ const MovieDetailsScreen = ({ route }) => {
 
       if (isAdded) {
         await updateShowProgress(userId, showId, "movies", data);
-        alert(`${movie.title} series details updated successfully!`);
+        Alert.alert(`${movie.title} series details updated successfully!`);
       } else {
         await saveToWatchList(
           userId,
@@ -106,10 +107,10 @@ const MovieDetailsScreen = ({ route }) => {
           userReview
         );
         setIsAdded(true);
-        alert(`${movie.title} added to watchlist!`);
+        Alert.alert(`${movie.title} added to watchlist!`);
       }
     } else {
-      alert("Please log in to save movies.");
+      Alert.alert("Please log in to save movies.");
     }
   };
 
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     marginVertical: 10,
-    backgroundColor: "gray", // Default background
+    backgroundColor: "gray",
     borderRadius: 5,
   },
   tabButton: {
@@ -530,14 +531,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   activeTabButton: {
-    backgroundColor: "darkgray", // Active tab background
+    backgroundColor: "darkgray",
   },
   tabText: {
     fontSize: 18,
     color: "white",
   },
   activeTabText: {
-    color: "white", // Active tab text color
+    color: "white",
     fontWeight: "bold",
   },
   showAdded: {
@@ -569,7 +570,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   backButtonPressed: {
-    color: "#ddd", // Light grey effect when pressed
+    color: "#ddd",
   },
 });
 

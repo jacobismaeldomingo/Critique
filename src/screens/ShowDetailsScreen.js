@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  Alert,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { Rating } from "@kolking/react-native-rating";
@@ -105,7 +106,7 @@ const ShowDetailsScreen = ({ route }) => {
 
   const handleSaveShow = async () => {
     if (!category) {
-      alert("Please select a category first before adding to list.");
+      Alert.alert("Please select a category first before adding to list.");
       return;
     }
 
@@ -124,7 +125,7 @@ const ShowDetailsScreen = ({ route }) => {
       if (isAdded) {
         console.log("Updating...");
         await updateShowProgress(userId, showId, type, data);
-        alert(`${type} details updated successfully!`);
+        Alert.alert(`${type} details updated successfully!`);
       } else {
         await saveToWatchList(
           userId,
@@ -135,10 +136,10 @@ const ShowDetailsScreen = ({ route }) => {
           userReview
         );
         setIsAdded(true);
-        alert(`${type} added to watchlist!`);
+        Alert.alert(`${type} added to watchlist!`);
       }
     } else {
-      alert("Please log in to save movies/tv series.");
+      Alert.alert("Please log in to save movies/tv series.");
     }
   };
 

@@ -3,14 +3,12 @@ import React, { useEffect, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
-import { Pressable } from "react-native";
 import LoginScreen from "./src/screens/LoginScreen";
 import SignupScreen from "./src/screens/SignupScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import WatchListScreen from "./src/screens/WatchListScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
-import ShowDetailsScreen from "./src/screens/ShowDetailsScreen";
 import { Ionicons } from "react-native-vector-icons"; // Icon Library
 import { onAuthStateChanged } from "firebase/auth";
 import { firebase_auth } from "./firebaseConfig";
@@ -65,7 +63,7 @@ const MainTabs = ({ navigation }) => {
   );
 };
 
-// App Stack (Main Tabs, Settings, MovieDetails)
+// App Stack
 const AppStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={MainTabs} />

@@ -1,6 +1,6 @@
 // screens/SettingsScreen.js
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { signOut } from "firebase/auth";
 import { firebase_auth } from "../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
@@ -10,10 +10,10 @@ const SettingsScreen = ({ navigation }) => {
   const handleLogout = async () => {
     try {
       await signOut(firebase_auth);
-      alert("Logged Out", "You have been successfully logged out.");
+      Alert.alert("Logged Out", "You have been successfully logged out.");
       AsyncStorage.clear();
     } catch (error) {
-      alert("Error", error.message);
+      Alert.alert("Error", error.message);
     }
   };
 

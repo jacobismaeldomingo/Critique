@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
+  Alert,
 } from "react-native";
 import { updateShowProgress } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
@@ -43,24 +44,21 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
           type,
           data
         );
-        alert("Ratings update successfully!");
+        Alert.alert("Ratings update successfully!");
         onClose();
       } else {
-        alert("Please enter a valid rating between 0 and 5.");
+        Alert.alert("Please enter a valid rating between 0 and 5.");
       }
     } else {
-      alert("Please log in to rate shows.");
+      Alert.alert("Please log in to rate shows.");
     }
   };
 
-  // Function to handle star clicks
   const handleStarPress = (newRating) => {
-    setRating(newRating); // Update rating
+    setRating(newRating);
   };
 
-  // Function to handle text input change
   const handleInputChange = (text) => {
-    // Allow empty input
     if (text === "") {
       setRating("");
       return;
@@ -68,7 +66,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
 
     // Allow numbers and at most one decimal point
     if (/^\d*\.?\d*$/.test(text)) {
-      setRating(text); // Keep as string to allow "3."
+      setRating(text);
     }
   };
 
@@ -121,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContainer: {
     width: "80%",

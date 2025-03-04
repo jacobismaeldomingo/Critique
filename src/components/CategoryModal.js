@@ -1,6 +1,6 @@
 // components/CategoryModal.js
-import React, { useState } from "react";
-import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
+import React from "react";
+import { Modal, View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { saveToWatchList } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
@@ -20,7 +20,7 @@ const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
       onClose();
       navigation.navigate("MainTabs", { screen: "WatchList" }); // Navigate to WatchList after adding
     } else {
-      alert("Please log in to save shows.");
+      Alert.alert("Please log in to save shows.");
     }
   };
 
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContainer: {
     width: "80%",

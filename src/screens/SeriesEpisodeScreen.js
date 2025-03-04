@@ -193,9 +193,9 @@ const styles = StyleSheet.create({
   episodeTitle: {
     fontSize: 18,
     fontWeight: "500",
-    flex: 1, // Allow the title to take up available space
-    flexWrap: "wrap", // Allow text to wrap to multiple lines
-    marginRight: 10, // Add some spacing between the title and the checkbox
+    flex: 1,
+    flexWrap: "wrap",
+    marginRight: 10,
   },
   overview: {
     fontSize: 18,

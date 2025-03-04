@@ -6,6 +6,7 @@ import {
   StyleSheet,
   FlatList,
   Modal,
+  Alert,
 } from "react-native";
 import { firebase_auth, db } from "../../firebaseConfig.js";
 import { doc, setDoc } from "firebase/firestore";
@@ -44,8 +45,12 @@ const GenreModal = ({ isVisible, onClose }) => {
       { merge: true }
     );
 
-    await AsyncStorage.setItem("preferredGenres", JSON.stringify(selectedGenres));
-    alert("Your preferences are saved!");
+    await AsyncStorage.setItem(
+      "preferredGenres",
+      JSON.stringify(selectedGenres)
+    );
+    Alert.alert("Your preferences are saved!");
+    onClose();
   };
 
   const renderGenreOption = ({ item }) => (
@@ -98,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContainer: {
     width: "90%",
@@ -123,9 +128,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 100, // Prevents buttons from becoming too small
-    maxWidth: "30%", // Ensures a reasonable max width for three columns
-    height: 50, // Sets a consistent height
+    minWidth: 100,
+    maxWidth: "30%",
+    height: 50,
   },
   genreText: {
     color: "#fff",

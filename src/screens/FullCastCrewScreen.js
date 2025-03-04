@@ -6,7 +6,7 @@ import {
   SectionList,
   Image,
   StyleSheet,
-  Pressable
+  Pressable,
 } from "react-native";
 import placeholderPicture from "../../assets/placeholder_profile.png";
 import { Ionicons } from "react-native-vector-icons";
@@ -27,7 +27,6 @@ const FullCastCrewScreen = ({ route }) => {
     }, {});
   };
 
-  // Grouped data
   const groupedCast = groupByDepartment(cast);
 
   // Convert grouped data into SectionList format
@@ -96,7 +95,6 @@ const FullCastCrewScreen = ({ route }) => {
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-      {/* SectionList for grouping roles */}
       <SectionList
         sections={filterData(sections)}
         keyExtractor={(item) => item.id.toString()}

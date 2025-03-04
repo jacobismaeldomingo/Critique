@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  Alert,
 } from "react-native";
 import { firebase_auth, db } from "../../firebaseConfig.js";
 import {
@@ -58,7 +59,7 @@ const ProfileScreen = ({ navigation }) => {
 
             // Retrieving User Preferences from Async Storage
             // const storedGenres = await AsyncStorage.getItem("preferredGenres");
-            const storedGenres = userData.preferredGenres || "";
+            const storedGenres = userData.preferredGenres || [];
             // const parsedGenres = storedGenres ? JSON.parse(storedGenres) : [];
             setSelectedGenres(storedGenres);
           } else {
@@ -142,7 +143,7 @@ const ProfileScreen = ({ navigation }) => {
         await AsyncStorage.setItem("username", username);
         await AsyncStorage.setItem("email", email);
 
-        alert("Success", "Profile updated successfully!");
+        Alert.alert("Success", "Profile updated successfully!");
         setIsEditing(false);
       }
     } catch (error) {
@@ -279,10 +280,10 @@ const ProfileScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.genreContainer}>
-            <View style={styles.profileEditContainer}>
+            <View>
               <Text style={styles.genreTitle}>Favorite Genres</Text>
               {selectedGenres.length > 0 ? (
-                <Text style={styles.profileText}>
+                <Text style={styles.genresText}>
                   {genres
                     .filter((genre) => selectedGenres.includes(genre.id))
                     .map((genre) => genre.name)
@@ -417,11 +418,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   preferencesButton: {
-    padding: 12,
-    borderRadius: 8,
-    width: 50,
-    marginRight: 10,
-    alignItems: "center",
     alignSelf: "center",
   },
   buttonText: {
@@ -454,6 +450,13 @@ const styles = StyleSheet.create({
     backgroundColor: "lightgray",
     borderRadius: 10,
     justifyContent: "space-between",
+    padding: 10,
+  },
+  genresText: {
+    fontSize: 18,
+    fontWeight: "500",
+    paddingRight: 5,
+    flexWrap: "wrap",
   },
 });
 

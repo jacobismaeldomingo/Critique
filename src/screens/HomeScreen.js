@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import {
   fetchTrendingMovies,
@@ -25,7 +26,7 @@ const HomeScreen = ({ navigation }) => {
   const [preferredMovies, setPreferredMovies] = useState([]);
   const [preferredTVSeries, setpreferredTVSeries] = useState([]);
   const [genres, setGenres] = useState([]);
-  const [isSearchVisible, setIsSearchVisible] = useState(false); // State to control modal visibility
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   useEffect(() => {
     const user = firebase_auth.currentUser;
@@ -66,7 +67,7 @@ const HomeScreen = ({ navigation }) => {
     const user = auth.currentUser;
     if (user) {
       await sendEmailVerification(user);
-      alert("Verification email sent!");
+      Alert.alert("Verification email sent!");
     }
   };
 
@@ -92,7 +93,6 @@ const HomeScreen = ({ navigation }) => {
         }}
         style={{ width: 120, height: 180, marginRight: 10, borderRadius: 10 }}
       />
-      {/* <Text style={styles.movieTitle}>{item.title}</Text> */}
     </Pressable>
   );
 
@@ -186,7 +186,6 @@ const HomeScreen = ({ navigation }) => {
         />
       </View> */}
 
-      {/* Search Modal */}
       <SearchModal
         isVisible={isSearchVisible}
         onClose={() => setIsSearchVisible(false)}

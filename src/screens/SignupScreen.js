@@ -71,14 +71,12 @@ const SignupScreen = ({ navigation }) => {
         );
       }
 
-      // Create user account
       const userCredential = await createUserWithEmailAndPassword(
         firebase_auth,
         email,
         password
       );
 
-      // Send email verification
       await sendEmailVerification(userCredential.user);
 
       // Save user profile in Firestore

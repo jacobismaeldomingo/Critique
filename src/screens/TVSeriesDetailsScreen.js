@@ -9,7 +9,7 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  Checkbox,
+  Alert,
 } from "react-native";
 import { Rating } from "@kolking/react-native-rating";
 import {
@@ -117,7 +117,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
   const handleSaveTVSeries = async () => {
     if (!category) {
-      alert("Please select a category first before adding to list.");
+      Alert.alert("Please select a category first before adding to list.");
       return;
     }
 
@@ -131,7 +131,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
       if (isAdded) {
         await updateShowProgress(userId, showId, "tvSeries", data);
-        alert(`${tvSeries.name} movie details updated successfully!`);
+        Alert.alert(`${tvSeries.name} movie details updated successfully!`);
       } else {
         await saveToWatchList(
           userId,
@@ -142,10 +142,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
           userReview
         );
         setIsAdded(true);
-        alert(`${tvSeries.name} added to watchlist!`);
+        Alert.alert(`${tvSeries.name} added to watchlist!`);
       }
     } else {
-      alert("Please log in to save TV series.");
+      Alert.alert("Please log in to save TV series.");
     }
   };
 

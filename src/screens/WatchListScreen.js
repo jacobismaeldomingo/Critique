@@ -19,7 +19,7 @@ const WatchListScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("movies");
   const [movies, setMovies] = useState([]);
   const [tvSeries, setTVSeries] = useState([]);
-  const [isSearchVisible, setIsSearchVisible] = useState(false); // State to control modal visibility
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -132,7 +132,6 @@ const WatchListScreen = ({ navigation }) => {
         </View>
       ))}
 
-      {/* Search Modal */}
       <SearchModal
         isVisible={isSearchVisible}
         onClose={() => setIsSearchVisible(false)}
@@ -173,7 +172,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
     padding: 10,
-    fontWeight: "500"
+    fontWeight: "500",
   },
   categoryContainer: {
     flex: 1,
