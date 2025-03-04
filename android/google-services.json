@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "542453473907",
+    "project_id": "filmdiaryapp",
+    "storage_bucket": "filmdiaryapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:542453473907:android:0cfe33ccdf4b0b4b190006",
+        "android_client_info": {
+          "package_name": "com.jacobdomingo.filmdiaryapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "542453473907-ic8dh5ffa6gf17q5a0e9u0p49fc2dnvn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEKh-zC8p-JOXD79-MSDATGP3U6VP8AYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "542453473907-ic8dh5ffa6gf17q5a0e9u0p49fc2dnvn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "542453473907-5tlr2aif8kopft2q0bn11p4be0ile9u8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.jacobdomingo.filmdiaryapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
