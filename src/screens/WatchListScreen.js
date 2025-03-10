@@ -1,5 +1,5 @@
 // WatchListScreen - Contains screens for movies and tv series
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,24 @@ import {
   Image,
   StyleSheet,
   Pressable,
-  TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getSavedShows } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
+
+// Memoized list item component to prevent unnecessary re-renders
+const ShowItem = React.memo(({ item, onPress }) => {
+  return (
+    <Pressable style={styles.movieItem} onPress={onPress}>
+      <Image
+        source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
+        style={styles.moviePoster}
+      />
+    </Pressable>
+  );
+});
 
 const WatchListScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("movies");
@@ -41,30 +52,34 @@ const WatchListScreen = ({ navigation }) => {
     }, [])
   );
 
-  const categorizedShows = (shows, category) =>
-    shows.filter((show) => show.category === category);
+  const categorizedShows = useMemo(
+    () => (shows, category) =>
+      shows.filter((show) => show.category === category),
+    []
+  );
 
-  const handleShowDetails = async (item) => {
-    if (activeTab === "movies") {
-      navigation.navigate("MovieDetails", {
-        showId: item.id,
-        type: "movies",
-      });
-    } else {
-      navigation.navigate("TVSeriesDetails", {
-        showId: item.id,
-        type: "tvSeries",
-      });
-    }
-  };
+  const handleShowDetails = useCallback(
+    (item) => {
+      if (activeTab === "movies") {
+        navigation.navigate("MovieDetails", {
+          showId: item.id,
+          type: "movies",
+        });
+      } else {
+        navigation.navigate("TVSeriesDetails", {
+          showId: item.id,
+          type: "tvSeries",
+        });
+      }
+    },
+    [activeTab, navigation]
+  );
 
-  const renderShowItem = ({ item }) => (
-    <Pressable style={styles.movieItem} onPress={() => handleShowDetails(item)}>
-      <Image
-        source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-        style={styles.moviePoster}
-      />
-    </Pressable>
+  const renderShowItem = useCallback(
+    ({ item }) => (
+      <ShowItem item={item} onPress={() => handleShowDetails(item)} />
+    ),
+    [handleShowDetails]
   );
 
   return (
@@ -80,9 +95,14 @@ const WatchListScreen = ({ navigation }) => {
         }}
       />
       <View style={{ flexDirection: "row", marginVertical: 10 }}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => setActiveTab("movies")}
-          style={{ marginHorizontal: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginHorizontal: 10,
+            },
+          ]}
         >
           <Text
             style={{
@@ -92,10 +112,15 @@ const WatchListScreen = ({ navigation }) => {
           >
             Movies
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => setActiveTab("tvSeries")}
-          style={{ marginHorizontal: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginHorizontal: 10,
+            },
+          ]}
         >
           <Text
             style={{
@@ -105,13 +130,19 @@ const WatchListScreen = ({ navigation }) => {
           >
             TV Series
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => setIsSearchVisible(true)}
-          style={{ marginLeft: "auto", marginRight: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginLeft: "auto",
+              marginRight: 10,
+            },
+          ]}
         >
           <Ionicons name="search" size={26} color="black" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       {["Watched", "In Progress", "Plan to Watch"].map((category) => (
         <View key={category} style={styles.categoryContainer}>
@@ -128,6 +159,10 @@ const WatchListScreen = ({ navigation }) => {
               <Text style={styles.text}>No shows yet in this category.</Text>
             }
             showsHorizontalScrollIndicator={false}
+            initialNumToRender={5} // Render only 5 items initially
+            windowSize={5} // Reduce the rendering window size
+            maxToRenderPerBatch={5} // Render 5 items at a time
+            updateCellsBatchingPeriod={50} // Batch updates every 50ms
           />
         </View>
       ))}
@@ -155,8 +190,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 20,
     textAlign: "center",
-    marginHorizontal: 120,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   movieItem: {
     flex: 1,

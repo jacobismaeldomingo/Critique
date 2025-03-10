@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Pressable,
   Image,
-  TouchableOpacity,
 } from "react-native";
 import { fetchMoviesByGenres, fetchTVSeriesByGenres } from "../services/tmdb";
 import { Ionicons } from "react-native-vector-icons";
@@ -62,9 +61,16 @@ const GenreScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons
-            name="chevron-back-circle-outline"
+            name="chevron-back-outline"
             size={28}
             color="black"
             style={{ marginRight: 45 }}
@@ -80,9 +86,14 @@ const GenreScreen = ({ route }) => {
         }}
       />
       <View style={{ flexDirection: "row", marginVertical: 10 }}>
-        <TouchableOpacity
+        <Pressable
           onPress={() => setActiveTab("movies")}
-          style={{ marginHorizontal: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginHorizontal: 10,
+            },
+          ]}
         >
           <Text
             style={{
@@ -92,10 +103,15 @@ const GenreScreen = ({ route }) => {
           >
             Movies
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => setActiveTab("tvSeries")}
-          style={{ marginHorizontal: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginHorizontal: 10,
+            },
+          ]}
         >
           <Text
             style={{
@@ -105,13 +121,19 @@ const GenreScreen = ({ route }) => {
           >
             TV Series
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </Pressable>
+        <Pressable
           onPress={() => setIsSearchVisible(true)}
-          style={{ marginLeft: "auto", marginRight: 10 }}
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+              marginLeft: "auto",
+              marginRight: 10,
+            },
+          ]}
         >
           <Ionicons name="search" size={26} color="black" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <FlatList
         numColumns={3}
@@ -145,7 +167,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginRight: 150,
     marginLeft: 45,
-    fontWeight: "500",
     fontWeight: "bold",
   },
   genreButton: {

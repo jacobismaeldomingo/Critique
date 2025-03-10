@@ -172,35 +172,17 @@ export const fetchTVSeriesCast = async (seriesId) => {
   }
 };
 
-export const fetchEpisodes = async (seriesId, seasonNumber) => {
+export const fetchSeason = async (seriesId, seasonNumber) => {
   try {
     const response = await fetch(
-      `https://api.themoviedb.org/3/tv/${seriesId}/season/${seasonNumber}?api_key=${API_KEY}`
+      `${BASE_URL}/tv/${seriesId}/season/${seasonNumber}?api_key=${API_KEY}`
     );
     const data = await response.json();
-    return data.episodes;
+    return data;
   } catch (error) {
     console.error("Error fetching episodes:", error);
   }
 };
-
-// export const fetchMovieGenres = async () => {
-//   const movieResponse = await fetch(
-//     `${BASE_URL}/genre/movie/list?api_key=${API_KEY}&language=en-US`
-//   );
-
-//   const movieData = await movieResponse.json();
-//   return movieData;
-// };
-
-// export const fetchSeriesGenres = async () => {
-//   const seriesResponse = await fetch(
-//     `${BASE_URL}/genre/tv/list?api_key=${API_KEY}&language=en-US`
-//   );
-
-//   const seriesData = await seriesResponse.json();
-//   return seriesData;
-// };
 
 export const fetchMoviesByGenres = async (genres) => {
   try {
@@ -252,6 +234,21 @@ export const fetchTVSeriesByGenres = async (genres) => {
     return series;
   } catch (error) {
     console.error("Error fetching tv series by genres:", error);
+    return [];
+  }
+};
+
+export const fetchMovieVideos = async (movieId) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/movie/${movieId}/videos?api_key=${API_KEY}`
+    );
+    const data = await response.json();
+    // Filter videos to include only trailers
+    const trailers = data.results.filter((video) => video.type === "Trailer");
+    return trailers;
+  } catch (error) {
+    console.error("Error fetching movie videos:", error);
     return [];
   }
 };

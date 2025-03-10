@@ -21,7 +21,9 @@ const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false,
     lowercase: false,
@@ -29,6 +31,20 @@ const SignupScreen = ({ navigation }) => {
     number: false,
     specialChar: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const clearEmail = () => {
+    setEmail("");
+  };
+
+  const clearUsername = () => {
+    setUsername("");
+  };
 
   // Password validation function
   const validatePassword = (password) => {
@@ -44,18 +60,26 @@ const SignupScreen = ({ navigation }) => {
   };
 
   const handleSignup = async () => {
-    setError("");
+    setEmailError("");
+    setUsernameError("");
+    setPasswordError("");
+
+    if (!email.trim() && !username.trim() && !password.trim()) {
+      setEmailError("Email cannot be empty.");
+      setUsernameError("Username cannot be empty.");
+      setPasswordError("Password cannot be empty.");
+    }
 
     if (!email.trim()) {
-      setError("Email cannot be empty.");
+      setEmailError("Email cannot be empty.");
       return;
     }
     if (!username.trim()) {
-      setError("Username cannot be empty.");
+      setUsernameError("Username cannot be empty.");
       return;
     }
     if (Object.values(passwordCriteria).includes(false)) {
-      setError("Password does not meet all criteria.");
+      setPasswordError("Password does not meet all criteria.");
       return;
     }
 
@@ -66,7 +90,7 @@ const SignupScreen = ({ navigation }) => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        throw new Error(
+        setUsernameError(
           "Username is already taken. Please choose another one."
         );
       }
@@ -91,7 +115,19 @@ const SignupScreen = ({ navigation }) => {
       console.log("Signup successfully!");
     } catch (error) {
       console.error("Signup Error:", error);
-      setError(error.message);
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          setEmailError("Email already in use.");
+          break;
+        case "auth/invalid-email":
+          setEmailError("Invalid email address.");
+          break;
+        case "auth/weak-password":
+          setPasswordError("Password is too weak.");
+          break;
+        default:
+          setEmailError("Signup failed. Please try again.");
+      }
     }
   };
 
@@ -112,58 +148,136 @@ const SignupScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Sign Up</Text>
       <Text style={styles.text}>Email Address:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="johndoe@email.com"
-        value={email}
-        onChangeText={setEmail}
-        placeholderTextColor={"#888"}
-      />
-      <Text style={styles.text}>Username:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Create a username"
-        value={username}
-        onChangeText={setUsername}
-        placeholderTextColor={"#888"}
-      />
-      <Text style={styles.text}>Password:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Create a password"
-        secureTextEntry
-        value={password}
-        onChangeText={validatePassword}
-        placeholderTextColor={"#888"}
-      />
-
-      <View style={styles.passwordValidation}>
-        {renderValidationCheck(
-          passwordCriteria.length,
-          "At least 8 characters"
+      <View
+        style={[
+          styles.inputContainer,
+          emailError ? styles.inputContainerError : null,
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="john.doe@domain.com"
+          value={email}
+          onChangeText={setEmail}
+          placeholderTextColor={"#888"}
+        />
+        {email.length > 0 && (
+          <Pressable onPress={clearEmail}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </Pressable>
         )}
-        {renderValidationCheck(
-          passwordCriteria.lowercase,
-          "At least one lowercase letter"
-        )}
-        {renderValidationCheck(
-          passwordCriteria.uppercase,
-          "At least one uppercase letter"
-        )}
-        {renderValidationCheck(passwordCriteria.number, "At least one number")}
-        {renderValidationCheck(
-          passwordCriteria.specialChar,
-          "At least one special character (@, $, !, %, *, ?, &)"
-        )}
+        {emailError ? (
+          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        ) : null}
       </View>
+      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Text style={styles.text}>Username:</Text>
+      <View
+        style={[
+          styles.inputContainer,
+          usernameError ? styles.inputContainerError : null,
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="Create a username"
+          value={username}
+          onChangeText={setUsername}
+          placeholderTextColor={"#888"}
+        />
+        {username.length > 0 && (
+          <Pressable onPress={clearUsername}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </Pressable>
+        )}
+        {usernameError ? (
+          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        ) : null}
+      </View>
+      {usernameError ? (
+        <Text style={styles.errorText}>{usernameError}</Text>
+      ) : null}
 
-      <Pressable style={styles.button} onPress={handleSignup}>
+      <Text style={styles.text}>Password:</Text>
+      <View
+        style={[
+          styles.inputContainer,
+          passwordError ? styles.inputContainerError : null,
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="Create a password"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={validatePassword}
+          onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
+          onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
+          placeholderTextColor={"#888"}
+        />
+        {showPasswordValidation && (
+          <Pressable onPress={togglePasswordVisibility}>
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={20}
+              color="#888"
+            />
+          </Pressable>
+        )}
+        {passwordError ? (
+          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        ) : null}
+      </View>
+      {passwordError ? (
+        <Text style={styles.errorText}>{passwordError}</Text>
+      ) : null}
+
+      {showPasswordValidation && (
+        <View style={styles.passwordValidation}>
+          {renderValidationCheck(
+            passwordCriteria.length,
+            "At least 8 characters"
+          )}
+          {renderValidationCheck(
+            passwordCriteria.lowercase,
+            "At least one lowercase letter"
+          )}
+          {renderValidationCheck(
+            passwordCriteria.uppercase,
+            "At least one uppercase letter"
+          )}
+          {renderValidationCheck(
+            passwordCriteria.number,
+            "At least one number"
+          )}
+          {renderValidationCheck(
+            passwordCriteria.specialChar,
+            "At least one special character (@, $, !, %, *, ?, &)"
+          )}
+        </View>
+      )}
+
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+            marginTop: 50,
+          },
+          styles.button,
+        ]}
+        onPress={handleSignup}
+      >
         <Text style={styles.buttonText}>Sign Up</Text>
       </Pressable>
+
       <Pressable
-        style={styles.button}
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.button,
+        ]}
         onPress={() => navigation.navigate("Login")}
       >
         <Text style={styles.buttonText}>Back to Login</Text>
@@ -182,18 +296,28 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 16,
     textAlign: "center",
+    marginBottom: 50,
   },
-  input: {
-    height: 40,
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     borderColor: "#ccc",
     borderWidth: 1,
-    marginBottom: 16,
+    borderRadius: 8,
+    marginBottom: 8,
     paddingHorizontal: 8,
   },
-  error: {
+  inputContainerError: {
+    borderColor: "red",
+  },
+  input: {
+    flex: 1,
+    height: 40,
+  },
+  errorText: {
     color: "red",
     marginBottom: 16,
-    textAlign: "center",
+    fontSize: 14,
   },
   success: {
     color: "green",

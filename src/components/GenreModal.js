@@ -86,10 +86,26 @@ const GenreModal = ({ isVisible, onClose }) => {
             keyExtractor={(item) => item.id.toString()}
             showsVerticalScrollIndicator={false}
           />
-          <Pressable style={styles.button} onPress={handleSavePreferences}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.button,
+            ]}
+            onPress={handleSavePreferences}
+          >
             <Text style={styles.buttonText}>Save Preferences</Text>
           </Pressable>
-          <Pressable style={styles.button} onPress={onClose}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.button,
+            ]}
+            onPress={onClose}
+          >
             <Text style={styles.buttonText}>Close</Text>
           </Pressable>
         </View>

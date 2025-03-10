@@ -73,12 +73,15 @@ const FullCastCrewScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="chevron-back-circle-outline"
-            size={28}
-            color="black"
-          />
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back-outline" size={28} color="black" />
         </Pressable>
         <Text style={styles.header}>Full Cast & Crew List</Text>
       </View>
@@ -128,7 +131,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginRight: 90,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   searchInput: {
     padding: 10,

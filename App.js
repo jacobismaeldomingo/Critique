@@ -15,25 +15,21 @@ import { firebase_auth } from "./firebaseConfig";
 import MovieDetailsScreen from "./src/screens/MovieDetailsScreen";
 import TVSeriesDetailsScreen from "./src/screens/TVSeriesDetailsScreen";
 import FullCastCrewScreen from "./src/screens/FullCastCrewScreen";
-import SeriesEpisodeScreen from "./src/screens/SeriesEpisodeScreen";
+import SeasonScreen from "./src/screens/SeasonScreen";
 import GenreScreen from "./src/screens/GenreScreen";
+import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
+import SecurityScreen from "./src/screens/SecurityScreen";
+import ResetPasswordScreen from "./src/screens/ResetPasswordScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // Auth Stack (Login and Signup)
 const AuthStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen
-      name="Login"
-      component={LoginScreen}
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen
-      name="Signup"
-      component={SignupScreen}
-      options={{ headerTitle: "Sign Up", headerShown: false }}
-    />
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Signup" component={SignupScreen} />
+    <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
   </Stack.Navigator>
 );
 
@@ -67,12 +63,14 @@ const MainTabs = ({ navigation }) => {
 const AppStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="MainTabs" component={MainTabs} />
-    <Stack.Screen name="Settings" component={SettingsScreen} />
     <Stack.Screen name="MovieDetails" component={MovieDetailsScreen} />
     <Stack.Screen name="TVSeriesDetails" component={TVSeriesDetailsScreen} />
     <Stack.Screen name="FullCastCrew" component={FullCastCrewScreen} />
-    <Stack.Screen name="SeriesEpisode" component={SeriesEpisodeScreen} />
+    <Stack.Screen name="Season" component={SeasonScreen} />
     <Stack.Screen name="GenreScreen" component={GenreScreen} />
+    <Stack.Screen name="Settings" component={SettingsScreen} />
+    <Stack.Screen name="Security" component={SecurityScreen} />
+    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
   </Stack.Navigator>
 );
 

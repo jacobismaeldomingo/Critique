@@ -1,5 +1,5 @@
 // components/SearchModal.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { searchMovies, searchTVSeries } from "../services/tmdb";
 import { useNavigation } from "@react-navigation/native";
+import { fetchGenres } from "../services/tmdb";
 
 const SearchModal = ({ isVisible, onClose }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [genres, setGenres] = useState([]);
   const navigation = useNavigation();
 
   const handleSearch = async (text) => {
@@ -49,6 +51,21 @@ const SearchModal = ({ isVisible, onClose }) => {
     }
   };
 
+  useEffect(() => {
+    const getGenres = async () => {
+      const genreList = await fetchGenres();
+      setGenres(genreList);
+    };
+
+    getGenres();
+  }, []);
+
+  const handleClose = async () => {
+    setQuery("");
+    setResults([]);
+    onClose();
+  };
+
   const renderResultItem = ({ item }) => (
     <Pressable
       style={styles.resultItem}
@@ -59,12 +76,20 @@ const SearchModal = ({ isVisible, onClose }) => {
         style={styles.poster}
       />
       <View style={styles.details}>
-        <Text style={styles.title}>{item.title || item.name}</Text>
+        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+          {item.title || item.name}
+        </Text>
         <Text style={styles.subtitle}>
           {item.type === "movies" ? "Movie" : "TV Series"} | Rating:{" "}
           {(item.vote_average / 2).toFixed(1)}/5
         </Text>
-        <Text style={styles.subtitle}>Genre: {item.genre_ids.join(", ")}</Text>
+        <Text style={styles.subtitle} numberOfLines={2} ellipsizeMode="tail">
+          Genre:{" "}
+          {genres
+            .filter((genre) => item.genre_ids.includes(genre.id))
+            .map((genre) => genre.name)
+            .join(", ")}
+        </Text>
       </View>
     </Pressable>
   );
@@ -97,8 +122,17 @@ const SearchModal = ({ isVisible, onClose }) => {
             }
             showsHorizontalScrollIndicator={false}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.flatListContentContainer}
           />
-          <Pressable style={styles.closeButton} onPress={onClose}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.closeButton,
+            ]}
+            onPress={handleClose}
+          >
             <Text style={styles.closeButtonText}>Close</Text>
           </Pressable>
         </View>
@@ -141,7 +175,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
     width: "100%",
-    paddingRight: 10,
   },
   poster: {
     width: 80,
@@ -149,17 +182,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 16,
   },
+  details: {
+    flexShrink: 1, // Allow the details to shrink if needed
+    width: "70%",
+  },
   title: {
     fontSize: 16,
     fontWeight: "bold",
     flexWrap: "wrap",
     marginBottom: 5,
+    flexShrink: 1,
   },
   subtitle: {
     fontSize: 14,
     color: "#666",
     flexWrap: "wrap",
     marginBottom: 2,
+    flexShrink: 1,
   },
   emptyText: {
     textAlign: "center",
@@ -179,6 +218,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
+  // flatListContentContainer: {
+  //   flexGrow: 1,
+  //   width: "100%",
+  // },
 });
 
 export default SearchModal;

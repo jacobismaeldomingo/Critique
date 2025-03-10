@@ -11,7 +11,6 @@ const SettingsScreen = ({ navigation }) => {
     try {
       await signOut(firebase_auth);
       Alert.alert("Logged Out", "You have been successfully logged out.");
-      AsyncStorage.clear();
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -20,9 +19,16 @@ const SettingsScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons
-            name="chevron-back-circle-outline"
+            name="chevron-back-outline"
             size={28}
             color="black"
             style={{ marginRight: 50 }}
@@ -37,20 +43,83 @@ const SettingsScreen = ({ navigation }) => {
           marginBottom: 15,
         }}
       />
-      <Pressable style={styles.button} onPress={() => {}}>
-        <Text style={styles.buttonText}>Notifications</Text>
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.itemContainer,
+        ]}
+        onPress={() => {}}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="notifications-outline" size={24} color="black" />
+          <Text style={styles.itemText}>Notifications</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="gray" />
       </Pressable>
-      <Pressable style={styles.button} onPress={() => {}}>
-        <Text style={styles.buttonText}>Appearance</Text>
+      <View style={styles.itemBorder} />
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.itemContainer,
+        ]}
+        onPress={() => {}}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="eye-outline" size={24} color="black" />
+          <Text style={styles.itemText}>Appearance</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="gray" />
       </Pressable>
-      <Pressable style={styles.button} onPress={() => {}}>
-        <Text style={styles.buttonText}>Security</Text>
+      <View style={styles.itemBorder} />
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.itemContainer,
+        ]}
+        onPress={() => navigation.navigate("Security")}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="lock-closed-outline" size={24} color="black" />
+          <Text style={styles.itemText}>Security</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="gray" />
       </Pressable>
-      <Pressable style={styles.button} onPress={() => {}}>
-        <Text style={styles.buttonText}>Help & Support</Text>
+      <View style={styles.itemBorder} />
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.itemContainer,
+        ]}
+        onPress={() => {}}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="help-circle-outline" size={24} color="black" />
+          <Text style={styles.itemText}>Help & Support</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={24} color="gray" />
       </Pressable>
-      <Pressable style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Log Out</Text>
+      <View style={styles.itemBorder} />
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.logoutContainer,
+        ]}
+        onPress={handleLogout}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="log-out-outline" size={24} color="red" />
+          <Text style={[styles.itemText, { color: "red" }]}>Log Out</Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -74,18 +143,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginRight: 150,
     marginLeft: 65,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
-  button: {
-    backgroundColor: "#007BFF",
-    padding: 12,
-    borderRadius: 8,
+  itemContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    padding: 16,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
+  itemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  itemText: {
+    fontSize: 24,
+    marginLeft: 16,
+  },
+  itemBorder: {
+    borderBottomColor: "#e0e0e0",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  logoutContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
   },
 });
 

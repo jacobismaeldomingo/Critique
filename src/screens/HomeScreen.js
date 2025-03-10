@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Alert,
 } from "react-native";
 import {
@@ -119,13 +118,27 @@ const HomeScreen = ({ navigation }) => {
       style={styles.container}
     >
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.navigate("Settings")}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.navigate("Settings")}
+        >
           <Ionicons name="menu" size={28} color="black" />
         </Pressable>
         <Text style={styles.header}>Home</Text>
-        <TouchableOpacity onPress={() => setIsSearchVisible(true)}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => setIsSearchVisible(true)}
+        >
           <Ionicons name="search" size={26} color="black" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
       <View
         style={{
@@ -166,7 +179,9 @@ const HomeScreen = ({ navigation }) => {
           showsHorizontalScrollIndicator={false}
         />
 
-        <Text style={styles.sectionTitle}>Popular TV Series</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 15 }]}>
+          Popular TV Series
+        </Text>
         <FlatList
           horizontal
           data={tvSeries}
@@ -211,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginHorizontal: 120,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   title: {
     fontSize: 24,

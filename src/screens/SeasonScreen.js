@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
-import { fetchEpisodes } from "../services/tmdb";
+import { fetchSeason } from "../services/tmdb";
 import { Ionicons } from "react-native-vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SeriesEpisodeScreen = ({ route, navigation }) => {
+const SeasonScreen = ({ route, navigation }) => {
   const { seriesId, seasonNumber, watchedEpisodes, updateWatchedEpisodes } =
     route.params;
+  const [season, setSeason] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [watched, setWatched] = useState(new Set(watchedEpisodes || []));
+  const [expandedSeason, setExpandedSeason] = useState(false);
+  const [expandedEpisodes, setExpandedEpisodes] = useState(false);
 
   // Load episodes from AsyncStorage when the component mounts
   useEffect(() => {
-    const loadEpisodes = async () => {
-      const episodeDetails = await fetchEpisodes(seriesId, seasonNumber);
-      setEpisodes(episodeDetails);
+    const loadSeason = async () => {
+      const seasonDetails = await fetchSeason(seriesId, seasonNumber);
+      setSeason(seasonDetails);
+      setEpisodes(seasonDetails.episodes);
     };
 
     const loadWatchedEpisodes = async () => {
@@ -34,7 +38,7 @@ const SeriesEpisodeScreen = ({ route, navigation }) => {
       }
     };
 
-    loadEpisodes();
+    loadSeason();
     loadWatchedEpisodes();
   }, [seriesId, seasonNumber]);
 
@@ -80,15 +84,34 @@ const SeriesEpisodeScreen = ({ route, navigation }) => {
     }
   };
 
+  // Toggle expanded state for a specific episode
+  const toggleEpisodeExpanded = (episodeId) => {
+    setExpandedEpisodes((prev) => ({
+      ...prev,
+      [episodeId]: !prev[episodeId], // Toggle expanded state for the episode
+    }));
+  };
+
+  if (!season) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Ionicons
-            name="chevron-back-circle-outline"
-            size={28}
-            color="black"
-          />
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back-outline" size={28} color="black" />
         </Pressable>
         <Text style={styles.header}>Season Episode Details</Text>
       </View>
@@ -99,17 +122,31 @@ const SeriesEpisodeScreen = ({ route, navigation }) => {
           marginBottom: 15,
         }}
       />
-      <View style={styles.seasonCheckboxContainer}>
-        <Text style={styles.title}>Season {seasonNumber}</Text>
-        <BouncyCheckbox
-          isChecked={watched.size === episodes.length}
-          onPress={toggleSeasonWatched}
-          fillColor="blue"
-          unfillColor="white"
-          innerIconStyle={{ borderRadius: 50 }}
-          iconStyle={{ borderRadius: 50 }}
-          style={{ marginRight: -5 }}
-        />
+      <View style={{ marginBottom: 10 }}>
+        <View style={styles.seasonCheckboxContainer}>
+          <Text style={styles.title}>Season {seasonNumber}</Text>
+          <BouncyCheckbox
+            isChecked={watched.size === episodes.length}
+            onPress={toggleSeasonWatched}
+            fillColor="blue"
+            unfillColor="white"
+            innerIconStyle={{ borderRadius: 50 }}
+            iconStyle={{ borderRadius: 50 }}
+            style={{ marginRight: -5, marginBottom: 10 }}
+          />
+        </View>
+        <View style={styles.synopsisContainer}>
+          <Text style={styles.synopsis}>
+            {expandedSeason
+              ? season.overview
+              : `${season.overview?.substring(0, 100)}...`}
+          </Text>
+          <Pressable onPress={() => setExpandedSeason(!expandedSeason)}>
+            <Text style={styles.readMore}>
+              {expandedSeason ? "Read Less" : "Read More..."}
+            </Text>
+          </Pressable>
+        </View>
       </View>
       <Text style={styles.title}>Episodes:</Text>
       <FlatList
@@ -137,7 +174,22 @@ const SeriesEpisodeScreen = ({ route, navigation }) => {
               </Text>
               <Text style={styles.detailText}> • {item.runtime} mins</Text>
             </View>
-            <Text style={styles.overview}>{item.overview}</Text>
+            {item.overview?.length > 100 ? (
+              <>
+                <Text style={styles.overview}>
+                  {expandedEpisodes[item.id]
+                    ? item.overview
+                    : `${item.overview?.substring(0, 100)}...`}
+                </Text>
+                <Pressable onPress={() => toggleEpisodeExpanded(item.id)}>
+                  <Text style={styles.readMore}>
+                    {expandedEpisodes[item.id] ? "Read Less" : "Read More..."}
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <Text style={styles.overview}>{item.overview}</Text>
+            )}
           </View>
         )}
       />
@@ -163,7 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginRight: 75,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   title: {
     fontSize: 20,
@@ -172,7 +224,6 @@ const styles = StyleSheet.create({
   },
   seasonCheckboxContainer: {
     flexDirection: "row",
-    marginBottom: 20,
     justifyContent: "space-between",
   },
   titleContainer: {
@@ -205,6 +256,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "gray",
   },
+  synopsisContainer: {
+    borderWidth: 1,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 10,
+  },
+  synopsis: {
+    fontSize: 15,
+  },
+  readMore: {
+    color: "blue",
+    marginTop: 5,
+  },
 });
 
-export default SeriesEpisodeScreen;
+export default SeasonScreen;

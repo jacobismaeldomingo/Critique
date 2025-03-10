@@ -9,7 +9,6 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
-  TouchableOpacity,
   Alert,
 } from "react-native";
 import { Rating } from "@kolking/react-native-rating";
@@ -17,6 +16,7 @@ import {
   fetchMovieCast,
   fetchMovieDetails,
   fetchMoviesProviders,
+  fetchMovieVideos,
 } from "../services/tmdb";
 import {
   saveToWatchList,
@@ -28,6 +28,7 @@ import CategoryModal from "../components/CategoryModal";
 import RateModal from "../components/RateModal";
 import { Ionicons } from "react-native-vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import YoutubePlayer from "react-native-youtube-iframe";
 
 const MovieDetailsScreen = ({ route }) => {
   const { showId } = route.params;
@@ -44,6 +45,7 @@ const MovieDetailsScreen = ({ route }) => {
   const [genres, setGenres] = useState([]);
   const [categoryVisible, setCategoryVisible] = useState(false);
   const [rateVisible, setRateVisible] = useState(false);
+  const [videos, setVideos] = useState([]);
 
   const navigation = useNavigation();
 
@@ -64,6 +66,11 @@ const MovieDetailsScreen = ({ route }) => {
         setCast(castDetails);
       };
 
+      const loadVideos = async () => {
+        const videoDetails = await fetchMovieVideos(showId);
+        setVideos(videoDetails);
+      };
+
       if (firebase_auth.currentUser) {
         const savedData = await getMovieData(
           firebase_auth.currentUser.uid,
@@ -79,6 +86,7 @@ const MovieDetailsScreen = ({ route }) => {
 
       loadProviders();
       loadCast();
+      loadVideos();
     };
 
     loadMovieDetails();
@@ -136,6 +144,19 @@ const MovieDetailsScreen = ({ route }) => {
     </Pressable>
   );
 
+  const renderVideoItem = ({ item }) => (
+    <View style={styles.videoContainer}>
+      <YoutubePlayer
+        width={350}
+        height={190}
+        videoId={item.key} // YouTube video ID
+        play={false} // Autoplay disabled
+        webViewStyle={styles.videoPlayer}
+      />
+      <Text style={styles.videoTitle}>{item.name}</Text>
+    </View>
+  );
+
   if (!movie) {
     return (
       <View style={styles.container}>
@@ -147,9 +168,16 @@ const MovieDetailsScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons
-            name="chevron-back-circle-outline"
+            name="chevron-back-outline"
             size={28}
             color="black"
             style={{ marginRight: 50 }}
@@ -213,7 +241,7 @@ const MovieDetailsScreen = ({ route }) => {
         </View>
 
         <View style={styles.tabContainer}>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setActiveTab("details")}
             style={[
               styles.tabButton,
@@ -229,10 +257,10 @@ const MovieDetailsScreen = ({ route }) => {
             >
               Details
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {isAdded && (
-            <TouchableOpacity
+            <Pressable
               onPress={() => setActiveTab("review")}
               style={[
                 styles.tabButton,
@@ -247,7 +275,7 @@ const MovieDetailsScreen = ({ route }) => {
               >
                 Review
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
 
@@ -289,7 +317,7 @@ const MovieDetailsScreen = ({ route }) => {
             />
 
             <Text style={styles.label}>Details</Text>
-            <View style={{ marginBottom: 20 }}>
+            <View>
               <View style={styles.details}>
                 <Text style={styles.detailsTitle}>Release Date</Text>
                 <Text style={styles.detailsText}>{movie.release_date}</Text>
@@ -299,6 +327,22 @@ const MovieDetailsScreen = ({ route }) => {
                 <Text style={styles.detailsText}>{movie.status}</Text>
               </View>
             </View>
+
+            {videos && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={styles.label}>Videos</Text>
+                <FlatList
+                  horizontal
+                  data={videos}
+                  renderItem={renderVideoItem}
+                  keyExtractor={(item) => item.id.toString()}
+                  ListEmptyComponent={
+                    <Text style={styles.text}>No videos available.</Text>
+                  }
+                  showsHorizontalScrollIndicator={false}
+                />
+              </View>
+            )}
           </>
         )}
 
@@ -385,8 +429,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginRight: 150,
-    marginLeft: 42,
-    fontWeight: "500",
+    marginLeft: 39,
+    fontWeight: "bold",
   },
   detailsContainer: {
     flexDirection: "row",
@@ -571,6 +615,19 @@ const styles = StyleSheet.create({
   },
   backButtonPressed: {
     color: "#ddd",
+  },
+  videoContainer: {
+    marginBottom: 16,
+  },
+  videoTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 10,
+    alignSelf: "center",
+  },
+  videoPlayer: {
+    borderRadius: 10,
+    marginRight: 10,
   },
 });
 

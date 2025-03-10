@@ -8,7 +8,6 @@ import {
   StyleSheet,
   TextInput,
   FlatList,
-  TouchableOpacity,
   Alert,
 } from "react-native";
 import { Rating } from "@kolking/react-native-rating";
@@ -176,7 +175,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
       <Pressable
         style={styles.seasonItem}
         onPress={() =>
-          navigation.navigate("SeriesEpisode", {
+          navigation.navigate("Season", {
             seriesId: showId,
             seasonNumber: item.season_number,
             watchedEpisodes: watchedEpisodes[item.season_number] || [],
@@ -232,9 +231,16 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons
-            name="chevron-back-circle-outline"
+            name="chevron-back-outline"
             size={28}
             color="black"
             style={{ marginRight: 25 }}
@@ -298,7 +304,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.tabContainer}>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setActiveTab("details")}
             style={[
               styles.tabButton,
@@ -314,10 +320,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
             >
               Details
             </Text>
-          </TouchableOpacity>
+          </Pressable>
 
           {isAdded && (
-            <TouchableOpacity
+            <Pressable
               onPress={() => setActiveTab("review")}
               style={[
                 styles.tabButton,
@@ -332,7 +338,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               >
                 Review
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
 
@@ -509,7 +515,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginRight: 150,
     marginLeft: 50,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   detailsContainer: {
     flexDirection: "row",

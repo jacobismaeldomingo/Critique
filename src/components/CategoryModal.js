@@ -47,7 +47,15 @@ const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
               </Pressable>
             ))}
           </View>
-          <Pressable style={styles.closeButton} onPress={onClose}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.closeButton,
+            ]}
+            onPress={onClose}
+          >
             <Text style={styles.closeButtonText}>Cancel</Text>
           </Pressable>
         </View>

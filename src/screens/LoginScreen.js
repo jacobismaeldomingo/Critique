@@ -27,6 +27,7 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "react-native-vector-icons";
 
 // Configure Google Sign-In
 GoogleSignin.configure({
@@ -78,14 +79,36 @@ const handleGoogleSignIn = async () => {
 const LoginScreen = ({ navigation }) => {
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const clearEmailOrUsername = () => {
+    setEmailOrUsername("");
+  };
 
   const handleLogin = async () => {
-    setError("");
+    setEmailError("");
+    setPasswordError("");
 
     try {
-      if (!emailOrUsername || !password) {
-        new Error("Please enter your username/email and password.");
+      if (!emailOrUsername && !password) {
+        new setEmailError("Please enter your email or username.");
+        new setPasswordError("Please enter your password.");
+        return;
+      }
+      if (!emailOrUsername) {
+        new setEmailError("Please enter your email or username.");
+        return;
+      }
+      if (!password) {
+        new setPasswordError("Please enter your password.");
+        return;
       }
 
       let email = emailOrUsername.trim();
@@ -97,13 +120,15 @@ const LoginScreen = ({ navigation }) => {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-          throw new Error("Username not found.");
+          setEmailError("Username not found.");
+          return;
         }
 
         // Get the email associated with the username
         const userData = querySnapshot.docs[0].data();
         if (!userData?.email) {
-          throw new Error("Email not found for this username.");
+          setEmailError("Email not found for this username.");
+          return;
         }
         email = userData.email;
 
@@ -120,7 +145,22 @@ const LoginScreen = ({ navigation }) => {
       console.log("Login successfully!");
     } catch (error) {
       console.error("Login Error:", error);
-      setError("Error: Invalid credentials");
+      switch (error.code) {
+        case "auth/invalid-email":
+          setEmailError("Invalid email address.");
+          break;
+        case "auth/user-not-found":
+          setEmailError("User not found.");
+          break;
+        case "auth/wrong-password":
+          setPasswordError("Incorrect password.");
+          break;
+        case "auth/too-many-requests":
+          setPasswordError("Too many attempts. Try again later.");
+          break;
+        default:
+          setPasswordError("Login failed. Please try again.");
+      }
     }
   };
 
@@ -128,36 +168,131 @@ const LoginScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
       <Text style={styles.text}>Email or Username:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email or username"
-        value={emailOrUsername}
-        onChangeText={setEmailOrUsername}
-        placeholderTextColor={"#888"}
-      />
+      <View
+        style={[
+          styles.inputContainer,
+          emailError ? styles.inputContainerError : null,
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your email or username"
+          value={emailOrUsername}
+          onChangeText={setEmailOrUsername}
+          placeholderTextColor={"#888"}
+        />
+        {emailOrUsername.length > 0 && (
+          <Pressable onPress={clearEmailOrUsername}>
+            <Ionicons name="close-circle" size={20} color="#888" />
+          </Pressable>
+        )}
+        {emailError ? (
+          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        ) : null}
+      </View>
+      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+
       <Text style={styles.text}>Password:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        placeholderTextColor={"#888"}
-      />
+      <View
+        style={[
+          styles.inputContainer,
+          passwordError ? styles.inputContainerError : null,
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your password"
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor={"#888"}
+          onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
+          onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
+        />
+        {showPasswordValidation && (
+          <Pressable onPress={togglePasswordVisibility}>
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={20}
+              color="#888"
+            />
+          </Pressable>
+        )}
+        {passwordError ? (
+          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        ) : null}
+      </View>
+      {passwordError ? (
+        <Text style={styles.errorText}>{passwordError}</Text>
+      ) : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+            marginTop: 5,
+            marginBottom: 50,
+            alignSelf: "flex-start",
+          },
+        ]}
+        onPress={() => navigation.navigate("ForgotPassword")}
+      >
+        <Text style={{ color: "blue", fontSize: 16 }}>Forgot password?</Text>
+      </Pressable>
 
-      <Pressable style={styles.button} onPress={handleLogin}>
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.button,
+        ]}
+        onPress={handleLogin}
+      >
         <Text style={styles.buttonText}>Login</Text>
       </Pressable>
+
       <Pressable
-        style={styles.button}
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+        ]}
         onPress={() => navigation.navigate("Signup")}
       >
-        <Text style={styles.buttonText}>Sign Up</Text>
+        <Text
+          style={{
+            color: "blue",
+            fontSize: 16,
+            alignSelf: "center",
+            marginBottom: 35,
+          }}
+        >
+          Don't have an account yet? Sign up here!
+        </Text>
       </Pressable>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 25,
+        }}
+      >
+        <View style={styles.itemBorder} />
+        <Text style={[styles.text, { marginHorizontal: 10 }]}>or</Text>
+        <View style={styles.itemBorder} />
+      </View>
 
-      <Pressable style={styles.googleButton} onPress={handleGoogleSignIn}>
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.googleButton,
+        ]}
+        onPress={handleGoogleSignIn}
+      >
         <Image
           source={require("../../assets/google-logo.png")}
           style={{ width: 25, height: 25 }}
@@ -176,20 +311,29 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    marginBottom: 16,
+    marginBottom: 50,
     textAlign: "center",
   },
-  input: {
-    height: 40,
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     borderColor: "#ccc",
     borderWidth: 1,
-    marginBottom: 16,
+    borderRadius: 8,
+    marginBottom: 8,
     paddingHorizontal: 8,
   },
-  error: {
+  inputContainerError: {
+    borderColor: "red",
+  },
+  input: {
+    flex: 1,
+    height: 40,
+  },
+  errorText: {
     color: "red",
     marginBottom: 16,
-    textAlign: "center",
+    fontSize: 14,
   },
   button: {
     backgroundColor: "#007BFF",
@@ -218,6 +362,12 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
+    marginBottom: 8,
+  },
+  itemBorder: {
+    borderBottomColor: "gray",
+    borderBottomWidth: 1,
+    width: "45%",
     marginBottom: 8,
   },
 });

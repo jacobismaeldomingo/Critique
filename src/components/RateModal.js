@@ -102,10 +102,26 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
               <Text style={styles.slashFive}>/ 5</Text>
             </View>
           </View>
-          <Pressable style={styles.closeButton} onPress={handleUserRating}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.closeButton,
+            ]}
+            onPress={handleUserRating}
+          >
             <Text style={styles.closeButtonText}>Save Ratings</Text>
           </Pressable>
-          <Pressable style={styles.closeButton} onPress={handleClose}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+              styles.closeButton,
+            ]}
+            onPress={handleClose}
+          >
             <Text style={styles.closeButtonText}>Cancel</Text>
           </Pressable>
         </View>

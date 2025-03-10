@@ -165,7 +165,14 @@ const ProfileScreen = ({ navigation }) => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerContainer}>
-        <Pressable onPress={() => navigation.navigate("Settings")}>
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.navigate("Settings")}
+        >
           <Ionicons name="menu" size={28} color="black" />
         </Pressable>
         <Text style={styles.header}>Profile</Text>
@@ -247,10 +254,26 @@ const ProfileScreen = ({ navigation }) => {
           ) : null}
 
           <View style={styles.buttonContainer}>
-            <Pressable style={styles.editButton} onPress={handleSave}>
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.5 : 1,
+                },
+                styles.editButton,
+              ]}
+              onPress={handleSave}
+            >
               <Text style={styles.buttonText}>Save</Text>
             </Pressable>
-            <Pressable style={styles.editButton} onPress={handleBack}>
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.5 : 1,
+                },
+                styles.editButton,
+              ]}
+              onPress={handleBack}
+            >
               <Text style={styles.buttonText}>Back</Text>
             </Pressable>
           </View>
@@ -258,7 +281,14 @@ const ProfileScreen = ({ navigation }) => {
       ) : (
         <>
           <View style={styles.button}>
-            <Pressable onPress={() => setIsEditing(true)}>
+            <Pressable
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.5 : 1,
+                },
+              ]}
+              onPress={() => setIsEditing(true)}
+            >
               <Text style={styles.buttonText}>Edit Profile</Text>
             </Pressable>
           </View>
@@ -297,7 +327,12 @@ const ProfileScreen = ({ navigation }) => {
             </View>
 
             <Pressable
-              style={styles.preferencesButton}
+              style={({ pressed }) => [
+                {
+                  opacity: pressed ? 0.5 : 1,
+                },
+                styles.preferencesButton,
+              ]}
               onPress={() => setIsGenreModalVisible(true)}
             >
               <Ionicons name="add-circle-outline" size={26} color="black" />
@@ -349,7 +384,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginRight: 150,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   title: {
     fontSize: 24,
