@@ -1,13 +1,27 @@
 import React, { useState } from "react";
-import { View, TextInput, Text, StyleSheet, Pressable } from "react-native";
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+} from "react-native";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { firebase_auth } from "../../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
 
-const ResetPasswordScreen = ({ navigation }) => {
+const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
 
   const handleForgotPassword = async () => {
     setError("");
+
+    const actionCodeSettings = {
+      url: "https://critique-pass-reset.vercel.app/reset-password",
+      handleCodeInApp: true, // This ensures Firebase does not handle it directly
+    };
 
     if (!email.trim()) {
       setError("Please enter your email.");
@@ -15,39 +29,20 @@ const ResetPasswordScreen = ({ navigation }) => {
     }
 
     try {
-      console.log("Reset password email sent.");
+      await sendPasswordResetEmail(firebase_auth, email, actionCodeSettings);
+      Alert.alert(
+        "Success",
+        "A password reset link has been sent to your email."
+      );
+      navigation.navigate("Login");
     } catch (error) {
-      console.log("Forgot Password Error:", error);
+      setError(error.message);
     }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-            },
-          ]}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons
-            name="chevron-back-outline"
-            size={28}
-            color="black"
-            style={{ marginRight: 50 }}
-          />
-        </Pressable>
-        <Text style={styles.header}>Reset Password</Text>
-      </View>
-      <View
-        style={{
-          borderBottomColor: "black",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          marginBottom: 15,
-        }}
-      />
+      <Text style={styles.title}>Forgot Password</Text>
       <Text style={styles.text}>Email:</Text>
       <View
         style={[
@@ -63,13 +58,34 @@ const ResetPasswordScreen = ({ navigation }) => {
           placeholderTextColor={"#888"}
         />
         {error ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <Pressable style={styles.button} onPress={handleForgotPassword}>
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+            marginTop: 50,
+          },
+          styles.button,
+        ]}
+        onPress={handleForgotPassword}
+      >
         <Text style={styles.buttonText}>Send Email</Text>
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [
+          {
+            opacity: pressed ? 0.5 : 1,
+          },
+          styles.button,
+        ]}
+        onPress={() => navigation.navigate("Login")}
+      >
+        <Text style={styles.buttonText}>Back to Login</Text>
       </Pressable>
     </View>
   );
@@ -78,50 +94,42 @@ const ResetPasswordScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: "center",
     padding: 16,
-    backgroundColor: "#fff",
-    marginTop: 50,
   },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    marginBottom: 5,
-    justifyContent: "space-between",
-  },
-  header: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
+    marginBottom: 50,
     textAlign: "center",
-    marginRight: 150,
-    marginLeft: 27,
     fontWeight: "bold",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#ccc",
+    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
   },
   inputContainerError: {
-    borderColor: "red",
+    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "red",
+    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginTop: 10,
+    marginBottom: 16,
   },
   buttonText: {
     color: "#fff",
@@ -129,9 +137,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    marginBottom: 10,
-    marginTop: 250,
+    marginBottom: 8,
   },
 });
 
-export default ResetPasswordScreen;
+export default ForgotPasswordScreen;

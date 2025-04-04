@@ -9,16 +9,28 @@ import {
   Pressable,
   StyleSheet,
   Modal,
+  Dimensions,
 } from "react-native";
 import { searchMovies, searchTVSeries } from "../services/tmdb";
 import { useNavigation } from "@react-navigation/native";
 import { fetchGenres } from "../services/tmdb";
+import { Ionicons } from "react-native-vector-icons";
 
 const SearchModal = ({ isVisible, onClose }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [genres, setGenres] = useState([]);
   const navigation = useNavigation();
+
+  const { width } = Dimensions.get("window"); // Get screen width
+
+  const posterWidth = width * 0.2; // 20% of screen width
+  const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 80x120)
+
+  const clearSearch = () => {
+    setQuery("");
+    setResults([]);
+  };
 
   const handleSearch = async (text) => {
     setQuery(text);
@@ -38,17 +50,13 @@ const SearchModal = ({ isVisible, onClose }) => {
 
   const handleNavigateToDetails = (item) => {
     onClose();
-    if (item.type === "movies") {
-      navigation.navigate("MovieDetails", {
+    navigation.navigate(
+      item.type === "movies" ? "MovieDetails" : "TVSeriesDetails",
+      {
         showId: item.id,
-        type: "movies",
-      });
-    } else {
-      navigation.navigate("TVSeriesDetails", {
-        showId: item.id,
-        type: "tvSeries",
-      });
-    }
+        type: item.type,
+      }
+    );
   };
 
   useEffect(() => {
@@ -73,7 +81,12 @@ const SearchModal = ({ isVisible, onClose }) => {
     >
       <Image
         source={{ uri: `https://image.tmdb.org/t/p/w200${item.poster_path}` }}
-        style={styles.poster}
+        style={{
+          width: posterWidth,
+          height: posterHeight,
+          borderRadius: 8,
+          marginRight: 16,
+        }}
       />
       <View style={styles.details}>
         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
@@ -103,12 +116,19 @@ const SearchModal = ({ isVisible, onClose }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for movies or TV series..."
-            value={query}
-            onChangeText={handleSearch}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for movies or TV series..."
+              value={query}
+              onChangeText={handleSearch}
+            />
+            {query.length > 0 && (
+              <Pressable onPress={clearSearch}>
+                <Ionicons name="close-circle" size={20} color="#888" />
+              </Pressable>
+            )}
+          </View>
           <FlatList
             data={results}
             renderItem={renderResultItem}
@@ -161,26 +181,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  searchInput: {
-    width: "100%",
-    height: 40,
-    borderColor: "#ccc",
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 8,
     marginBottom: 16,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
   },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 16,
     width: "100%",
-  },
-  poster: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
-    marginRight: 16,
   },
   details: {
     flexShrink: 1, // Allow the details to shrink if needed
@@ -208,7 +226,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 16,
-    backgroundColor: "#007BFF",
+    backgroundColor: "#7850bf",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
@@ -218,10 +236,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
-  // flatListContentContainer: {
-  //   flexGrow: 1,
-  //   width: "100%",
-  // },
 });
 
 export default SearchModal;

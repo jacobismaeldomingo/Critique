@@ -25,7 +25,6 @@ const GenreModal = ({ isVisible, onClose }) => {
 
   // Select Genres
   const toggleGenreSelection = (id) => {
-    console.log(id);
     setSelectedGenres((prevGenres) =>
       prevGenres.includes(id)
         ? prevGenres.filter((g) => g !== id)
@@ -60,7 +59,7 @@ const GenreModal = ({ isVisible, onClose }) => {
         {
           backgroundColor: selectedGenres.includes(item.id)
             ? item.color
-            : "#ccc",
+            : "#9E9E9E",
         },
       ]}
       onPress={() => toggleGenreSelection(item.id)}
@@ -153,7 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#3F51B5",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

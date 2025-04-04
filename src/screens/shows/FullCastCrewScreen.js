@@ -7,8 +7,9 @@ import {
   Image,
   StyleSheet,
   Pressable,
+  Dimensions,
 } from "react-native";
-import placeholderPicture from "../../assets/placeholder_profile.png";
+import placeholderPicture from "../../../assets/placeholder_profile.png";
 import { Ionicons } from "react-native-vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
@@ -16,6 +17,12 @@ const FullCastCrewScreen = ({ route }) => {
   const { cast } = route.params;
   const [searchQuery, setSearchQuery] = useState("");
   const navigation = useNavigation();
+
+  // Get device width
+  const { width } = Dimensions.get("window");
+
+  // Set responsive width and height for the cast image
+  const castImageSize = width * 0.15;
 
   // Function to group members by their roles
   const groupByDepartment = (data) => {
@@ -59,7 +66,12 @@ const FullCastCrewScreen = ({ route }) => {
             ? { uri: `https://image.tmdb.org/t/p/w200${item.profile_path}` }
             : placeholderPicture
         }
-        style={styles.castImage}
+        style={{
+          width: castImageSize,
+          height: castImageSize,
+          borderRadius: 40,
+          marginRight: 10,
+        }}
       />
       <View>
         <Text style={styles.castName}>{item.name}</Text>
@@ -71,72 +83,83 @@ const FullCastCrewScreen = ({ route }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-            },
-          ]}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="chevron-back-outline" size={28} color="black" />
-        </Pressable>
-        <Text style={styles.header}>Full Cast & Crew List</Text>
+    <>
+      <View style={styles.upperContainer} />
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+            ]}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back-outline" size={28} color="black" />
+          </Pressable>
+          <View style={styles.headerWrapper}>
+            <Text style={styles.header}>Full Cast & Crew List</Text>
+          </View>
+        </View>
+        <View style={styles.divider} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search cast or crew..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <SectionList
+          sections={filterData(sections)}
+          keyExtractor={(item) => item.id.toString()}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionTitle}>{title}</Text>
+          )}
+          renderItem={renderCastItem}
+          ListEmptyComponent={
+            <Text style={styles.noResults}>No results found.</Text>
+          }
+          stickySectionHeadersEnabled={false}
+        />
       </View>
-      <View
-        style={{
-          borderBottomColor: "black",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          marginBottom: 15,
-        }}
-      />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search cast or crew..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-      <SectionList
-        sections={filterData(sections)}
-        keyExtractor={(item) => item.id.toString()}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.sectionTitle}>{title}</Text>
-        )}
-        renderItem={renderCastItem}
-        ListEmptyComponent={
-          <Text style={styles.noResults}>No results found.</Text>
-        }
-        stickySectionHeadersEnabled={false}
-      />
-    </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  upperContainer: {
+    paddingBottom: 60,
+    backgroundColor: "#7850bf",
+  },
   container: {
     flex: 1,
     padding: 16,
     backgroundColor: "#fff",
-    marginTop: 50,
   },
   headerContainer: {
     padding: 5,
     flexDirection: "row",
+    alignItems: "center",
     marginBottom: 5,
-    justifyContent: "space-between",
+  },
+  headerWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
   },
   header: {
     fontSize: 20,
-    textAlign: "center",
-    marginRight: 90,
     fontWeight: "bold",
+  },
+  divider: {
+    borderBottomColor: "#9E9E9E",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 10,
   },
   searchInput: {
     padding: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#9E9E9E",
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -146,17 +169,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 15,
     color: "#000",
+    paddingLeft: 5,
   },
   castItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 15,
-  },
-  castImage: {
-    width: 65,
-    height: 65,
-    borderRadius: 40,
-    marginRight: 10,
+    paddingLeft: 5,
   },
   castName: {
     fontSize: 18,

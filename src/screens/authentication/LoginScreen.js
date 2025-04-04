@@ -13,7 +13,7 @@ import {
   GoogleAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { firebase_auth, db } from "../../firebaseConfig.js";
+import { firebase_auth, db } from "../../../firebaseConfig.js";
 import {
   collection,
   query,
@@ -166,6 +166,13 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.imageContainer}>
+        <Image
+          style={styles.logo}
+          source={require("../../../assets/critique-logo.png")}
+        />
+      </View>
+
       <Text style={styles.title}>Login</Text>
       <Text style={styles.text}>Email or Username:</Text>
       <View
@@ -179,15 +186,15 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Enter your email or username"
           value={emailOrUsername}
           onChangeText={setEmailOrUsername}
-          placeholderTextColor={"#888"}
+          placeholderTextColor={"#9E9E9E"}
         />
         {emailOrUsername.length > 0 && (
           <Pressable onPress={clearEmailOrUsername}>
-            <Ionicons name="close-circle" size={20} color="#888" />
+            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
           </Pressable>
         )}
-        {emailError ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        {emailError && emailOrUsername.length === 0 ? (
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
@@ -205,7 +212,7 @@ const LoginScreen = ({ navigation }) => {
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
-          placeholderTextColor={"#888"}
+          placeholderTextColor={"#9E9E9E"}
           onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
           onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
         />
@@ -214,12 +221,12 @@ const LoginScreen = ({ navigation }) => {
             <Ionicons
               name={showPassword ? "eye-off" : "eye"}
               size={20}
-              color="#888"
+              color="#9E9E9E"
             />
           </Pressable>
         )}
-        {passwordError ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        {passwordError && !showPasswordValidation ? (
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {passwordError ? (
@@ -230,14 +237,12 @@ const LoginScreen = ({ navigation }) => {
         style={({ pressed }) => [
           {
             opacity: pressed ? 0.5 : 1,
-            marginTop: 5,
-            marginBottom: 50,
-            alignSelf: "flex-start",
           },
+          styles.forgotPassword,
         ]}
         onPress={() => navigation.navigate("ForgotPassword")}
       >
-        <Text style={{ color: "blue", fontSize: 16 }}>Forgot password?</Text>
+        <Text style={{ color: "#3F51B5", fontSize: 16 }}>Forgot password?</Text>
       </Pressable>
 
       <Pressable
@@ -260,25 +265,11 @@ const LoginScreen = ({ navigation }) => {
         ]}
         onPress={() => navigation.navigate("Signup")}
       >
-        <Text
-          style={{
-            color: "blue",
-            fontSize: 16,
-            alignSelf: "center",
-            marginBottom: 35,
-          }}
-        >
+        <Text style={styles.signUpText}>
           Don't have an account yet? Sign up here!
         </Text>
       </Pressable>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 25,
-        }}
-      >
+      <View style={styles.itemBorderContainer}>
         <View style={styles.itemBorder} />
         <Text style={[styles.text, { marginHorizontal: 10 }]}>or</Text>
         <View style={styles.itemBorder} />
@@ -294,7 +285,7 @@ const LoginScreen = ({ navigation }) => {
         onPress={handleGoogleSignIn}
       >
         <Image
-          source={require("../../assets/google-logo.png")}
+          source={require("../../../assets/google-logo.png")}
           style={{ width: 25, height: 25 }}
         />
         <Text style={styles.goggleButtonText}>Sign in with Google</Text>
@@ -309,34 +300,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
   },
+  imageContainer: {
+    marginBottom: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logo: {
+    width: 350,
+    height: 70,
+  },
   title: {
     fontSize: 24,
     marginBottom: 50,
     textAlign: "center",
+    fontWeight: "bold",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#ccc",
+    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
   },
   inputContainerError: {
-    borderColor: "red",
+    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "red",
+    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#9575CD",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -365,10 +366,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemBorder: {
-    borderBottomColor: "gray",
+    borderBottomColor: "#9E9E9E",
     borderBottomWidth: 1,
     width: "45%",
     marginBottom: 8,
+  },
+  itemBorderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 25,
+  },
+  signUpText: {
+    color: "#3F51B5",
+    fontSize: 16,
+    alignSelf: "center",
+    marginBottom: 35,
+  },
+  forgotPassword: {
+    marginTop: 5,
+    marginBottom: 50,
+    alignSelf: "flex-start",
   },
 });
 

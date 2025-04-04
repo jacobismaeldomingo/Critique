@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   Pressable,
+  Dimensions,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getSavedShows } from "../services/firestore";
@@ -14,13 +15,23 @@ import { firebase_auth } from "../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
 
+const { width } = Dimensions.get("window"); // Get device width
+
+const posterWidth = width * 0.28; // 30% of screen width
+const posterHeight = posterWidth * (16 / 11); // Maintain aspect ratio
+
 // Memoized list item component to prevent unnecessary re-renders
 const ShowItem = React.memo(({ item, onPress }) => {
   return (
     <Pressable style={styles.movieItem} onPress={onPress}>
       <Image
         source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-        style={styles.moviePoster}
+        style={{
+          width: posterWidth,
+          height: posterHeight,
+          borderRadius: 10,
+          marginRight: 12,
+        }}
       />
     </Pressable>
   );
@@ -52,12 +63,6 @@ const WatchListScreen = ({ navigation }) => {
     }, [])
   );
 
-  const categorizedShows = useMemo(
-    () => (shows, category) =>
-      shows.filter((show) => show.category === category),
-    []
-  );
-
   const handleShowDetails = useCallback(
     (item) => {
       if (activeTab === "movies") {
@@ -83,102 +88,144 @@ const WatchListScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.header}>Watchlist</Text>
-      </View>
-      <View
-        style={{
-          borderBottomColor: "black",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          marginBottom: 5,
-        }}
-      />
-      <View style={{ flexDirection: "row", marginVertical: 10 }}>
-        <Pressable
-          onPress={() => setActiveTab("movies")}
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-              marginHorizontal: 10,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              fontSize: 20,
-              color: activeTab === "movies" ? "blue" : "gray",
-            }}
-          >
-            Movies
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setActiveTab("tvSeries")}
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-              marginHorizontal: 10,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              fontSize: 20,
-              color: activeTab === "tvSeries" ? "blue" : "gray",
-            }}
-          >
-            TV Series
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setIsSearchVisible(true)}
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-              marginLeft: "auto",
-              marginRight: 10,
-            },
-          ]}
-        >
-          <Ionicons name="search" size={26} color="black" />
-        </Pressable>
-      </View>
-      {["Watched", "In Progress", "Plan to Watch"].map((category) => (
-        <View key={category} style={styles.categoryContainer}>
-          <Text style={styles.sectionTitle}>{category}</Text>
-          <FlatList
-            horizontal
-            data={categorizedShows(
-              activeTab === "movies" ? movies : tvSeries,
-              category
-            )}
-            renderItem={renderShowItem}
-            keyExtractor={(item) => item.id.toString()}
-            ListEmptyComponent={
-              <Text style={styles.text}>No shows yet in this category.</Text>
-            }
-            showsHorizontalScrollIndicator={false}
-            initialNumToRender={5} // Render only 5 items initially
-            windowSize={5} // Reduce the rendering window size
-            maxToRenderPerBatch={5} // Render 5 items at a time
-            updateCellsBatchingPeriod={50} // Batch updates every 50ms
-          />
+    <>
+      <View style={styles.upperContainer} />
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.header}>Watchlist</Text>
         </View>
-      ))}
+        <View style={styles.divider} />
+        <View style={{ flexDirection: "row", marginTop: 10, marginBottom: 15 }}>
+          <Pressable
+            onPress={() => setActiveTab("movies")}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+                marginHorizontal: 10,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                color: activeTab === "movies" ? "#3F51B5" : "#9E9E9E",
+                fontWeight: activeTab === "movies" ? "bold" : "normal",
+              }}
+            >
+              Movies
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setActiveTab("tvSeries")}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+                marginHorizontal: 10,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 20,
+                color: activeTab === "tvSeries" ? "#3F51B5" : "#9E9E9E",
+                fontWeight: activeTab === "tvSeries" ? "bold" : "normal",
+              }}
+            >
+              TV Series
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setIsSearchVisible(true)}
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+                marginLeft: "auto",
+                marginRight: 10,
+              },
+            ]}
+          >
+            <Ionicons name="search" size={26} color="#3F51B5" />
+          </Pressable>
+        </View>
+        {["Watched", "In Progress", "Plan to Watch"].map((category) => {
+          const categoryFilteredShows = (
+            activeTab === "movies" ? movies : tvSeries
+          )
+            .filter((show) => show.category === category)
+            .slice(0, 10);
 
-      <SearchModal
-        isVisible={isSearchVisible}
-        onClose={() => setIsSearchVisible(false)}
-      />
-    </View>
+          return (
+            <View key={category} style={styles.categoryContainer}>
+              <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>{category}</Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    {
+                      opacity: pressed ? 0.5 : 1,
+                      marginRight: 10,
+                    },
+                  ]}
+                  onPress={() => {
+                    let screenName = "";
+                    switch (category) {
+                      case "Watched":
+                        screenName = "WatchedList";
+                        break;
+                      case "In Progress":
+                        screenName = "InProgressList";
+                        break;
+                      case "Plan to Watch":
+                        screenName = "PlanToWatchList";
+                        break;
+                      default:
+                        return;
+                    }
+                    navigation.navigate(screenName);
+                  }}
+                >
+                  <Ionicons
+                    name="chevron-forward-outline"
+                    size={20}
+                    color="black"
+                  />
+                </Pressable>
+              </View>
+              <FlatList
+                horizontal
+                data={categoryFilteredShows}
+                renderItem={renderShowItem}
+                keyExtractor={(item) => item.id.toString()}
+                ListEmptyComponent={
+                  <Text style={styles.text}>
+                    You haven't added any shows yet in this category.
+                  </Text>
+                }
+                showsHorizontalScrollIndicator={false}
+                initialNumToRender={5} // Render only 5 items initially
+                windowSize={5} // Reduce the rendering window size
+                maxToRenderPerBatch={5} // Render 5 items at a time
+                updateCellsBatchingPeriod={50} // Batch updates every 50ms
+              />
+            </View>
+          );
+        })}
+
+        <SearchModal
+          isVisible={isSearchVisible}
+          onClose={() => setIsSearchVisible(false)}
+        />
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  upperContainer: {
+    paddingBottom: 60,
+    backgroundColor: "#7850bf",
+  },
   container: {
     flex: 1,
-    marginTop: 50,
     padding: 16,
     backgroundColor: "#fff",
   },
@@ -191,30 +238,37 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     fontWeight: "bold",
+    color: "#000000",
+  },
+  divider: {
+    borderBottomColor: "#9E9E9E",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 5,
   },
   movieItem: {
     flex: 1,
     marginTop: 10,
     alignItems: "center",
   },
-  moviePoster: {
-    width: 110,
-    height: 160,
-    borderRadius: 10,
-    marginRight: 12,
-  },
   text: {
     fontSize: 16,
     padding: 10,
     fontWeight: "500",
+    color: "#000000",
   },
   categoryContainer: {
     flex: 1,
     paddingLeft: 10,
   },
+  sectionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#000000",
   },
 });
 

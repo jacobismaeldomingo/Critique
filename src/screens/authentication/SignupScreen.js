@@ -5,7 +5,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
-import { firebase_auth, db } from "../../firebaseConfig.js";
+import { firebase_auth, db } from "../../../firebaseConfig.js";
 import {
   collection,
   query,
@@ -135,9 +135,9 @@ const SignupScreen = ({ navigation }) => {
     return (
       <View style={styles.passwordCriteria}>
         {condition ? (
-          <Ionicons name="checkmark-circle-outline" size={20} color="green" />
+          <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
         ) : (
-          <Ionicons name="checkmark-circle-outline" size={20} color="red" />
+          <Ionicons name="checkmark-circle-outline" size={20} color="#FF5252" />
         )}
         <Text style={styles.textCriteria}> {text}</Text>
       </View>
@@ -159,15 +159,15 @@ const SignupScreen = ({ navigation }) => {
           placeholder="john.doe@domain.com"
           value={email}
           onChangeText={setEmail}
-          placeholderTextColor={"#888"}
+          placeholderTextColor={"#9E9E9E"}
         />
         {email.length > 0 && (
           <Pressable onPress={clearEmail}>
-            <Ionicons name="close-circle" size={20} color="#888" />
+            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
           </Pressable>
         )}
-        {emailError ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        {emailError && email.length === 0 ? (
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
@@ -184,15 +184,15 @@ const SignupScreen = ({ navigation }) => {
           placeholder="Create a username"
           value={username}
           onChangeText={setUsername}
-          placeholderTextColor={"#888"}
+          placeholderTextColor={"#9E9E9E"}
         />
         {username.length > 0 && (
           <Pressable onPress={clearUsername}>
-            <Ionicons name="close-circle" size={20} color="#888" />
+            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
           </Pressable>
         )}
-        {usernameError ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        {usernameError && username.length === 0 ? (
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {usernameError ? (
@@ -214,19 +214,19 @@ const SignupScreen = ({ navigation }) => {
           onChangeText={validatePassword}
           onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
           onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
-          placeholderTextColor={"#888"}
+          placeholderTextColor={"#9E9E9E"}
         />
         {showPasswordValidation && (
           <Pressable onPress={togglePasswordVisibility}>
             <Ionicons
               name={showPassword ? "eye-off" : "eye"}
               size={20}
-              color="#888"
+              color="#9E9E9E"
             />
           </Pressable>
         )}
-        {passwordError ? (
-          <Ionicons name="alert-circle-outline" size={20} color="red" />
+        {passwordError && !showPasswordValidation ? (
+          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
         ) : null}
       </View>
       {passwordError ? (
@@ -297,35 +297,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
     marginBottom: 50,
+    fontWeight: "bold",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#ccc",
+    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
   },
   inputContainerError: {
-    borderColor: "red",
+    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "red",
+    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
-  success: {
-    color: "green",
-    marginBottom: 16,
-    textAlign: "center",
-  },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#9575CD",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

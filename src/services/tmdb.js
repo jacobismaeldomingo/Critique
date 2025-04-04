@@ -40,21 +40,20 @@ export const searchTVSeries = async (query) => {
   return data.results;
 };
 
-export const fetchTrendingMovies = async () => {
+export const fetchTrendingMovies = async (page = 1) => {
   const response = await fetch(
-    `${BASE_URL}/trending/movie/week?api_key=${API_KEY}`
+    `${BASE_URL}/trending/movie/week?api_key=${API_KEY}&page=${page}`
   );
   const data = await response.json();
-  const movies = data.results.map((movie) => ({
+  return data.results.map((movie) => ({
     ...movie,
     media_type: "movies",
   }));
-  return movies;
 };
 
-export const fetchTrendingTVSeries = async () => {
+export const fetchTrendingTVSeries = async (page = 1) => {
   const response = await fetch(
-    `${BASE_URL}/trending/tv/week?api_key=${API_KEY}`
+    `${BASE_URL}/trending/tv/week?api_key=${API_KEY}&page=${page}`
   );
   const data = await response.json();
   const series = data.results.map((series) => ({
@@ -62,6 +61,47 @@ export const fetchTrendingTVSeries = async () => {
     media_type: "tvSeries",
   }));
   return series;
+};
+
+export const fetchPopularMovies = async (page = 1) => {
+  const response = await fetch(
+    `${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${page}`
+  );
+  const data = await response.json();
+
+  // Filter out movies where `adult` is true
+  const movies = data.results
+    .filter((movie) => !movie.adult)
+    .map((movie) => ({
+      ...movie,
+      media_type: "movies",
+    }));
+
+  return movies;
+};
+
+export const fetchPopularTVSeries = async (page = 1) => {
+  const response = await fetch(
+    `${BASE_URL}/tv/popular?api_key=${API_KEY}&page=${page}`
+  );
+  const data = await response.json();
+  const series = data.results.map((series) => ({
+    ...series,
+    media_type: "tvSeries",
+  }));
+  return series;
+};
+
+export const fetchNowPlaying = async (page = 1) => {
+  const response = await fetch(
+    `${BASE_URL}/movie/now_playing?api_key=${API_KEY}&page=${page}`
+  );
+  const data = await response.json();
+  const movies = data.results.map((movie) => ({
+    ...movie,
+    media_type: "movies",
+  }));
+  return movies;
 };
 
 export const fetchGenres = async () => {
@@ -184,7 +224,7 @@ export const fetchSeason = async (seriesId, seasonNumber) => {
   }
 };
 
-export const fetchMoviesByGenres = async (genres) => {
+export const fetchMoviesByGenres = async (genres, page = 1) => {
   try {
     if (!genres || genres.length === 0) {
       console.log("No genres provided.");
@@ -192,7 +232,7 @@ export const fetchMoviesByGenres = async (genres) => {
     }
 
     const response = await fetch(
-      `${BASE_URL}/discover/movie?include_adult=false&include_null_first_air_dates=false&language=en-US&page=1&sort_by=popularity.desc&with_genres=${genres}&api_key=${API_KEY}`
+      `${BASE_URL}/discover/movie?include_adult=false&include_null_first_air_dates=false&language=en-US&page=${page}&sort_by=popularity.desc&with_genres=${genres}&api_key=${API_KEY}`
     );
 
     if (!response.ok) {
@@ -200,6 +240,11 @@ export const fetchMoviesByGenres = async (genres) => {
     }
 
     const data = await response.json();
+    if (!data || !data.results || !Array.isArray(data.results)) {
+      console.log("Invalid response format for movies");
+      return [];
+    }
+
     const movies = data.results.map((movie) => ({
       ...movie,
       media_type: "movies",
@@ -211,7 +256,7 @@ export const fetchMoviesByGenres = async (genres) => {
   }
 };
 
-export const fetchTVSeriesByGenres = async (genres) => {
+export const fetchTVSeriesByGenres = async (genres, page = 1) => {
   try {
     if (!genres || genres.length === 0) {
       console.log("No genres provided.");
@@ -219,7 +264,7 @@ export const fetchTVSeriesByGenres = async (genres) => {
     }
 
     const response = await fetch(
-      `${BASE_URL}/discover/tv?include_adult=false&include_null_first_air_dates=false&language=en-US&page=1&sort_by=popularity.desc&with_genres=${genres}&api_key=${API_KEY}`
+      `${BASE_URL}/discover/tv?include_adult=false&include_null_first_air_dates=false&language=en-US&page=${page}&sort_by=popularity.desc&with_genres=${genres}&api_key=${API_KEY}`
     );
 
     if (!response.ok) {
@@ -227,6 +272,11 @@ export const fetchTVSeriesByGenres = async (genres) => {
     }
 
     const data = await response.json();
+    if (!data || !data.results || !Array.isArray(data.results)) {
+      console.log("Invalid response format for TV series");
+      return [];
+    }
+
     const series = data.results.map((series) => ({
       ...series,
       media_type: "tvSeries",
@@ -242,6 +292,21 @@ export const fetchMovieVideos = async (movieId) => {
   try {
     const response = await fetch(
       `${BASE_URL}/movie/${movieId}/videos?api_key=${API_KEY}`
+    );
+    const data = await response.json();
+    // Filter videos to include only trailers
+    const trailers = data.results.filter((video) => video.type === "Trailer");
+    return trailers;
+  } catch (error) {
+    console.error("Error fetching movie videos:", error);
+    return [];
+  }
+};
+
+export const fetchTVSeriesVideos = async (seriesId) => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/tv/${seriesId}/videos?api_key=${API_KEY}`
     );
     const data = await response.json();
     // Filter videos to include only trailers

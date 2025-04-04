@@ -12,9 +12,10 @@ const firebaseConfig = {
   appId: "1:542453473907:web:4215651267ef3501190006",
 };
 
+export const MAPS_API_KEY = "AIzaSyASxi5UgDU5ZaiB-Tgv6oRfKUrhaRWSGKE";
+
 const firebase_app = initializeApp(firebaseConfig);
 const firebase_auth = getAuth(firebase_app);
 const db = getFirestore(firebase_app);
 
 export { firebase_auth, db };
-

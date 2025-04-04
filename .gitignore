@@ -24,6 +24,7 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+expo-error.log
 
 # macOS
 .DS_Store
@@ -34,3 +35,30 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Android Build
+/android/build/
+/android/app/build/
+/android/.gradle/
+/android/.idea/
+/android/.cxx/
+/android/local.properties
+
+# iOS Build
+/ios/build/
+/ios/Pods/
+/ios/Podfile.lock
+/ios/.xcode.env
+/ios/.xcode.env.local
+
+# Cache
+.cache/
+
+# Gradle
+/android/gradlew
+/android/gradlew.bat
+
+# Xcode
+/ios/*.xcworkspace
+/ios/*.xcuserstate
+/ios/*.xcuserdata/

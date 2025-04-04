@@ -71,7 +71,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
   };
 
   const handleClose = () => {
-    setRating("");
+    setRating("0");
     onClose();
   };
 
@@ -91,6 +91,9 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
               rating={rating}
               onChange={handleStarPress}
               size={24}
+              fillColor="#9575CD"
+              touchColor="#FFFFFF"
+              baseColor="#9E9E9E"
             />
             <View style={styles.inputContainer}>
               <TextInput
@@ -167,7 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#9E9E9E",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 16,
-    backgroundColor: "#007BFF",
+    backgroundColor: "#7850bf",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",

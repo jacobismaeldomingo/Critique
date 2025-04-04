@@ -157,234 +157,246 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      keyboardShouldPersistTaps="handled"
-      nestedScrollEnabled={true}
-      showsHorizontalScrollIndicator={false}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.headerContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            {
-              opacity: pressed ? 0.5 : 1,
-            },
-          ]}
-          onPress={() => navigation.navigate("Settings")}
-        >
-          <Ionicons name="menu" size={28} color="black" />
-        </Pressable>
-        <Text style={styles.header}>Profile</Text>
-      </View>
-      <View
-        style={{
-          borderBottomColor: "black",
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          marginBottom: 5,
-        }}
-      />
-
-      {isEditing ? (
-        <>
-          <View style={[styles.profileEditContainer, { marginTop: 10 }]}>
-            <Text style={styles.profileTitle}>Username</Text>
-            <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={(text) => {
-                setUsername(text);
-                checkUsernameAvailability(text);
-              }}
-              placeholder="Enter username"
-              placeholderTextColor="#888"
-            />
+    <>
+      <View style={styles.upperContainer} />
+      <ScrollView
+        style={styles.container}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled={true}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              {
+                opacity: pressed ? 0.5 : 1,
+              },
+            ]}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Ionicons name="menu" size={28} color="#3F51B5" />
+          </Pressable>
+          <View style={styles.headerWrapper}>
+            <Text style={styles.header}>Profile</Text>
           </View>
+        </View>
+        <View style={styles.divider} />
 
-          {!isUsernameAvailable && (
-            <Text style={styles.errorText}>Username is already taken.</Text>
-          )}
-
-          {errors.username ? (
-            <Text style={styles.errorText}>{errors.username}</Text>
-          ) : null}
-
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Email</Text>
-            <TextInput
-              style={styles.nonEditableText}
-              value={email}
-              onChangeText={setPhoneNumber}
-              placeholder="Enter phone number"
-              placeholderTextColor="#888"
-              editable={false}
-            />
-          </View>
-
-          <View style={styles.profileEditContainer}>
-            <Text style={styles.profileTitle}>
-              Phone Number (999-999-9999):
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="Enter phone number"
-              placeholderTextColor="#888"
-            />
-          </View>
-
-          {errors.phoneNumber ? (
-            <Text style={styles.errorText}>{errors.phoneNumber}</Text>
-          ) : null}
-
-          <View style={styles.profileEditContainer}>
-            <Text style={styles.profileTitle}>Birthday (YYYY-MM-DD):</Text>
-            <TextInput
-              style={styles.input}
-              value={birthday}
-              onChangeText={setBirthday}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor="#888"
-            />
-          </View>
-
-          {errors.birthday ? (
-            <Text style={styles.errorText}>{errors.birthday}</Text>
-          ) : null}
-
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : 1,
-                },
-                styles.editButton,
-              ]}
-              onPress={handleSave}
-            >
-              <Text style={styles.buttonText}>Save</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : 1,
-                },
-                styles.editButton,
-              ]}
-              onPress={handleBack}
-            >
-              <Text style={styles.buttonText}>Back</Text>
-            </Pressable>
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={styles.button}>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : 1,
-                },
-              ]}
-              onPress={() => setIsEditing(true)}
-            >
-              <Text style={styles.buttonText}>Edit Profile</Text>
-            </Pressable>
-          </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Username</Text>
-            <Text style={styles.profileText}>{username}</Text>
-          </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Email</Text>
-            <Text style={styles.profileText}>{email}</Text>
-          </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Phone Number</Text>
-            <Text style={styles.profileText}>{phoneNumber}</Text>
-          </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Birthday</Text>
-            <Text style={styles.profileText}>{birthday}</Text>
-          </View>
-
-          <View style={styles.genreContainer}>
-            <View>
-              <Text style={styles.genreTitle}>Favorite Genres</Text>
-              {selectedGenres.length > 0 ? (
-                <Text style={styles.genresText}>
-                  {genres
-                    .filter((genre) => selectedGenres.includes(genre.id))
-                    .map((genre) => genre.name)
-                    .join(", ")}
-                </Text>
-              ) : (
-                <Text style={styles.profileText}>
-                  No favorite genres selected.
-                </Text>
-              )}
+        {isEditing ? (
+          <>
+            <View style={[styles.profileEditContainer, { marginTop: 10 }]}>
+              <Text style={styles.profileTitle}>Username:</Text>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={(text) => {
+                  setUsername(text);
+                  checkUsernameAvailability(text);
+                }}
+                placeholder="Enter username"
+                placeholderTextColor="#888"
+              />
             </View>
 
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : 1,
-                },
-                styles.preferencesButton,
-              ]}
-              onPress={() => setIsGenreModalVisible(true)}
-            >
-              <Ionicons name="add-circle-outline" size={26} color="black" />
-            </Pressable>
-          </View>
+            {!isUsernameAvailable && (
+              <Text style={styles.errorText}>Username is already taken.</Text>
+            )}
 
-          <View
-            style={{
-              borderBottomColor: "black",
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              marginVertical: 10,
-            }}
-          />
+            {errors.username ? (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            ) : null}
 
-          <Text style={styles.stats}>My Stats</Text>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>Movies Watched</Text>
-            <Text style={styles.profileText}>{movies}</Text>
-          </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileTitle}>TV Series Watched</Text>
-            <Text style={styles.profileText}>{series}</Text>
-          </View>
-        </>
-      )}
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Email</Text>
+              <TextInput
+                style={styles.nonEditableText}
+                value={email}
+                onChangeText={setPhoneNumber}
+                placeholder="Enter phone number"
+                placeholderTextColor="#888"
+                editable={false}
+              />
+            </View>
 
-      <GenreModal
-        isVisible={isGenreModalVisible}
-        onClose={() => setIsGenreModalVisible(false)}
-      />
-    </ScrollView>
+            <View style={styles.profileEditContainer}>
+              <Text style={styles.profileTitle}>
+                Phone Number (999-999-9999):
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder="Enter phone number"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            {errors.phoneNumber ? (
+              <Text style={styles.errorText}>{errors.phoneNumber}</Text>
+            ) : null}
+
+            <View style={styles.profileEditContainer}>
+              <Text style={styles.profileTitle}>Birthday (YYYY-MM-DD):</Text>
+              <TextInput
+                style={styles.input}
+                value={birthday}
+                onChangeText={setBirthday}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#888"
+              />
+            </View>
+
+            {errors.birthday ? (
+              <Text style={styles.errorText}>{errors.birthday}</Text>
+            ) : null}
+
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                  styles.editButton,
+                ]}
+                onPress={handleSave}
+              >
+                <Text style={styles.buttonText}>Save</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                  styles.editButton,
+                ]}
+                onPress={handleBack}
+              >
+                <Text style={styles.buttonText}>Back</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <>
+            <View>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                ]}
+                onPress={() => setIsEditing(true)}
+              >
+                <Text style={styles.buttonText}>Edit Profile</Text>
+              </Pressable>
+            </View>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Username</Text>
+              <Text style={styles.profileText}>{username}</Text>
+            </View>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Email</Text>
+              <Text style={styles.profileText}>{email}</Text>
+            </View>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Phone Number</Text>
+              <Text style={styles.profileText}>{phoneNumber}</Text>
+            </View>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Birthday</Text>
+              <Text style={styles.profileText}>{birthday}</Text>
+            </View>
+
+            <View style={styles.genreContainer}>
+              <View>
+                <Text style={styles.genreTitle}>Favorite Genres</Text>
+                {selectedGenres.length > 0 ? (
+                  <Text style={styles.genresText}>
+                    {genres
+                      .filter((genre) => selectedGenres.includes(genre.id))
+                      .map((genre) => genre.name)
+                      .join(", ")}
+                  </Text>
+                ) : (
+                  <Text style={styles.profileText}>
+                    No favorite genres selected.
+                  </Text>
+                )}
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                  styles.preferencesButton,
+                ]}
+                onPress={() => setIsGenreModalVisible(true)}
+              >
+                <Ionicons name="add-circle-outline" size={26} color="#7850bf" />
+              </Pressable>
+            </View>
+
+            <View
+              style={{
+                borderBottomColor: "black",
+                borderBottomWidth: StyleSheet.hairlineWidth,
+                marginVertical: 10,
+              }}
+            />
+
+            <Text style={styles.stats}>Your Stats</Text>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>Movies Watched</Text>
+              <Text style={styles.profileText}>{movies}</Text>
+            </View>
+            <View style={styles.profileContainer}>
+              <Text style={styles.profileTitle}>TV Series Watched</Text>
+              <Text style={styles.profileText}>{series}</Text>
+            </View>
+          </>
+        )}
+
+        <GenreModal
+          isVisible={isGenreModalVisible}
+          onClose={() => setIsGenreModalVisible(false)}
+        />
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  upperContainer: {
+    paddingBottom: 60,
+    backgroundColor: "#7850bf",
+  },
   container: {
     flex: 1,
-    marginTop: 50,
     padding: 16,
     backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
     flexDirection: "row",
+    alignItems: "center",
     marginBottom: 5,
-    justifyContent: "space-between",
+  },
+  headerWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
   },
   header: {
     fontSize: 20,
-    textAlign: "center",
-    marginRight: 150,
     fontWeight: "bold",
+  },
+  divider: {
+    borderBottomColor: "#9E9E9E",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 5,
   },
   title: {
     fontSize: 24,
@@ -435,7 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
   },
   button: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 8,
     marginVertical: 16,
@@ -444,7 +456,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   editButton: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 8,
     marginBottom: 5,
@@ -460,7 +472,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorText: {
-    color: "red",
+    color: "#FF5252",
     marginBottom: 16,
     textAlign: "center",
   },
@@ -470,7 +482,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   stats: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
