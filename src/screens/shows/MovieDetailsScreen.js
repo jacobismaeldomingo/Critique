@@ -1,5 +1,5 @@
 // screens/MovieDetailsScreen.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -34,8 +34,11 @@ import RateModal from "../../components/RateModal";
 import { Ionicons } from "react-native-vector-icons";
 import YoutubePlayer from "react-native-youtube-iframe";
 import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library";
 import { uploadImageToCloudinary } from "../../services/cloudinary";
 import LoadingItem from "../../components/LoadingItem";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const MovieDetailsScreen = ({ route, navigation }) => {
   const { showId } = route.params;
@@ -67,14 +70,17 @@ const MovieDetailsScreen = ({ route, navigation }) => {
   const videoHeight = videoWidth * (190 / 350); // Maintain 16:9 aspect ratio
   const singleVideoHeight = width * (9 / 18); // Maintain 18:9 aspect ratio
   const providerSize = width * 0.11;
-  const imageHeight = width * (160 / 440);
+  const imageHeight = width * (160 / 430);
   const ratingSize = width * 0.05;
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     const loadMovieDetails = async () => {
       const movieDetails = await fetchMovieDetails(showId);
       setMovie(movieDetails);
-      setApiRating(Number(movieDetails.vote_average) / 2); // Convert /10 to /5
+      setApiRating((Number(movieDetails.vote_average) / 2).toFixed(2)); // Convert /10 to /5
       setGenres(movieDetails.genres);
 
       const loadProviders = async () => {
@@ -186,8 +192,17 @@ const MovieDetailsScreen = ({ route, navigation }) => {
           marginBottom: 5,
         }}
       />
-      <Text style={styles.castName}>{item.name}</Text>
-      <Text style={styles.castRole}>{item.character || "Unknown Role"}</Text>
+      <Text
+        style={[
+          styles.castName,
+          { color: colors.text, opacity: colors.opacity },
+        ]}
+      >
+        {item.name}
+      </Text>
+      <Text style={[styles.castRole, { color: colors.gray }]}>
+        {item.character || "Unknown Role"}
+      </Text>
     </Pressable>
   );
 
@@ -200,14 +215,90 @@ const MovieDetailsScreen = ({ route, navigation }) => {
         play={false} // Autoplay disabled
         webViewStyle={styles.videoPlayer}
       />
-      <Text style={styles.videoTitle} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={[
+          styles.videoTitle,
+          { color: colors.text, opacity: colors.opacity },
+        ]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {item.name}
       </Text>
     </View>
   );
 
-  const handleTakePhoto = () => {
-    navigation.navigate("Camera");
+  const onPhotoTaken = async (photoUri) => {
+    try {
+      setPhotoLoading(true);
+
+      // Upload to Cloudinary
+      const { secure_url, public_id } = await uploadImageToCloudinary(photoUri);
+
+      if (!secure_url) {
+        Alert.alert("Error", "Failed to upload image to Cloudinary.");
+        setPhotoLoading(false);
+        return;
+      }
+
+      // Generate a unique ID for the photo
+      const photoId = generateId();
+
+      // Save the photo metadata in Firestore
+      const userId = firebase_auth.currentUser.uid;
+      await savePhotoToFirestore(userId, showId, "movies", {
+        id: photoId,
+        imageUrl: secure_url,
+        public_id: public_id,
+        caption: "",
+        timestamp: new Date().toISOString(),
+      });
+
+      // Update local state
+      setPhotos((prevPhotos) => [
+        ...prevPhotos,
+        { id: photoId, imageUrl: secure_url, public_id, caption: "" },
+      ]);
+
+      // Save to device gallery if user granted permission
+      await MediaLibrary.saveToLibraryAsync(photoUri);
+
+      Alert.alert("Success", "Photo saved successfully!");
+    } catch (error) {
+      console.error("Error saving photo:", error);
+      Alert.alert("Error", "Failed to save photo.");
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.status !== "granted") {
+      Alert.alert(
+        "Permission Denied",
+        "Camera access is required to take photos."
+      );
+      return;
+    }
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.8,
+        allowsEditing: false,
+      });
+
+      if (!result.canceled) {
+        const photoUri = result.assets[0].uri;
+
+        // Continue with your logic like uploading the image
+        await onPhotoTaken(photoUri);
+      }
+    } catch (error) {
+      console.error("Error using camera:", error);
+      Alert.alert("Error", "Failed to take photo.");
+    }
   };
 
   // Function to view a photo in full screen
@@ -395,8 +486,13 @@ const MovieDetailsScreen = ({ route, navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -406,13 +502,25 @@ const MovieDetailsScreen = ({ route, navigation }) => {
             ]}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Movie Details</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Movie Details
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <ScrollView
           style={styles.scrollView}
           keyboardShouldPersistTaps="handled"
@@ -432,7 +540,14 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               }}
             />
             <View style={styles.textContainer}>
-              <Text style={styles.showTitle}>{movie.title}</Text>
+              <Text
+                style={[
+                  styles.showTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                {movie.title}
+              </Text>
               <View style={styles.ratingContainer}>
                 <Rating
                   maxRating={5}
@@ -441,16 +556,34 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                   size={ratingSize}
                   fillColor="#9575CD"
                   touchColor="#FFFFFF"
-                  baseColor="#9E9E9E"
+                  baseColor={colors.gray}
                 />
-                <Text style={styles.ratingText}>{apiRating} / 5</Text>
+                <Text
+                  style={[
+                    styles.ratingText,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {apiRating} / 5
+                </Text>
               </View>
-              <Text style={styles.genreText}>
+              <Text
+                style={[
+                  styles.genreText,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
                 {genres.map((genre) => genre.name).join(", ") ||
                   "No genres available"}
               </Text>
               <Text
-                style={{ fontSize: 18, fontWeight: "600", marginVertical: 10 }}
+                style={[
+                  styles.providers,
+                  {
+                    color: colors.text,
+                    opacity: colors.opacity,
+                  },
+                ]}
               >
                 Providers
               </Text>
@@ -460,7 +593,12 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                 renderItem={renderProviderItem}
                 keyExtractor={(item) => item.provider_id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     No providers found for this series.
                   </Text>
                 }
@@ -474,7 +612,9 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               onPress={() => setActiveTab("details")}
               style={[
                 styles.tabButton,
-                activeTab === "details" && styles.activeTabButton,
+                activeTab === "details" && {
+                  backgroundColor: colors.secondary,
+                },
                 !isAdded && styles.showAdded,
               ]}
             >
@@ -493,7 +633,9 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                 onPress={() => setActiveTab("review")}
                 style={[
                   styles.tabButton,
-                  activeTab === "review" && styles.activeTabButton,
+                  activeTab === "review" && {
+                    backgroundColor: colors.secondary,
+                  },
                 ]}
               >
                 <Text
@@ -510,28 +652,51 @@ const MovieDetailsScreen = ({ route, navigation }) => {
 
           {activeTab === "details" && (
             <>
-              <Text style={styles.label}>Synopsis</Text>
-              <View style={styles.synopsisContainer}>
-                <Text style={styles.synopsis}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Synopsis
+              </Text>
+              <View
+                style={[
+                  styles.synopsisContainer,
+                  { borderColor: colors.text, color: colors.text },
+                ]}
+              >
+                <Text style={[styles.synopsis, { color: colors.text }]}>
                   {expanded
                     ? movie.overview
                     : `${movie.overview.substring(0, 100)}...`}
                 </Text>
                 <Pressable onPress={() => setExpanded(!expanded)}>
-                  <Text style={styles.readMore}>
+                  <Text style={[styles.readMore, { color: colors.secondary }]}>
                     {expanded ? "Read Less" : "Read More..."}
                   </Text>
                 </Pressable>
               </View>
 
-              <View style={styles.nextScreenContainer}>
-                <Text style={styles.label}>Cast</Text>
+              <View style={styles.castContainer}>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  Cast
+                </Text>
                 <Pressable
                   onPress={() =>
                     navigation.navigate("FullCastCrew", { cast, showId })
                   }
                 >
-                  <Text style={styles.nextScreenText}>Show All</Text>
+                  <Text
+                    style={[styles.nextScreenText, { color: colors.secondary }]}
+                  >
+                    Show All
+                  </Text>
                 </Pressable>
               </View>
               <FlatList
@@ -540,26 +705,71 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                 renderItem={renderCastItem}
                 keyExtractor={(item) => item.id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>No cast found.</Text>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No cast found.
+                  </Text>
                 }
                 showsHorizontalScrollIndicator={false}
               />
 
-              <Text style={styles.label}>Details</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Details
+              </Text>
               <View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Release Date:</Text>
-                  <Text style={styles.detailsText}>{movie.release_date}</Text>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Release Date:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    {movie.release_date}
+                  </Text>
                 </View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Run Time:</Text>
-                  <Text style={styles.detailsText}>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Run Time:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
                   </Text>
                 </View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Status:</Text>
-                  <Text style={styles.detailsText}>{movie.status}</Text>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Status:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    {movie.status}
+                  </Text>
                 </View>
               </View>
 
@@ -567,7 +777,14 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                 <View style={{ marginBottom: 20 }}>
                   {videos.length === 1 ? (
                     <>
-                      <Text style={styles.label}>Trailer</Text>
+                      <Text
+                        style={[
+                          styles.label,
+                          { color: colors.text, opacity: colors.opacity },
+                        ]}
+                      >
+                        Trailer
+                      </Text>
                       <View style={{ alignItems: "center" }}>
                         <YoutubePlayer
                           width={"100%"}
@@ -577,7 +794,10 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                           webViewStyle={{ borderRadius: 10 }}
                         />
                         <Text
-                          style={styles.videoTitle}
+                          style={[
+                            styles.videoTitle,
+                            { color: colors.text, opacity: colors.opacity },
+                          ]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
@@ -587,14 +807,28 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                     </>
                   ) : (
                     <>
-                      <Text style={styles.label}>Videos</Text>
+                      <Text
+                        style={[
+                          styles.label,
+                          { color: colors.text, opacity: colors.opacity },
+                        ]}
+                      >
+                        Videos
+                      </Text>
                       <FlatList
                         horizontal
                         data={videos}
                         renderItem={renderVideoItem}
                         keyExtractor={(item) => item.id.toString()}
                         ListEmptyComponent={
-                          <Text style={styles.text}>No videos available.</Text>
+                          <Text
+                            style={[
+                              styles.text,
+                              { color: colors.text, opacity: colors.opacity },
+                            ]}
+                          >
+                            No videos available.
+                          </Text>
                         }
                         showsHorizontalScrollIndicator={false}
                       />
@@ -607,22 +841,53 @@ const MovieDetailsScreen = ({ route, navigation }) => {
 
           {activeTab === "review" && isAdded && (
             <>
-              <Text style={styles.label}>Your Review</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Your Review
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.details,
+                    color: colors.text,
+                    borderColor: colors.gray,
+                  },
+                ]}
                 placeholder="Write your review..."
                 value={userReview}
                 onChangeText={setUserReview}
-                placeholderTextColor={"#000"}
+                placeholderTextColor={colors.gray}
               />
-              <Text style={styles.label}>Images</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Images
+              </Text>
               <View style={styles.photosHeader}>
-                <Text style={styles.photosCount}>{photos.length} Photos</Text>
+                <Text
+                  style={[
+                    styles.photosCount,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {photos.length} Photos
+                </Text>
                 <View style={styles.photoButtonsContainer}>
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { opacity: pressed ? 0.7 : 1 },
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        backgroundColor: colors.secondary,
+                      },
                     ]}
                     onPress={handleTakePhoto}
                   >
@@ -632,7 +897,11 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { opacity: pressed ? 0.7 : 1, marginLeft: 10 },
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        marginLeft: 10,
+                        backgroundColor: colors.secondary,
+                      },
                     ]}
                     onPress={handleAddFromGallery}
                   >
@@ -643,9 +912,14 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               </View>
 
               {photoLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#7850bf" />
-                  <Text>Saving photo...</Text>
+                <View
+                  style={[
+                    styles.loadingContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={{ color: colors.text }}>Saving photo...</Text>
                 </View>
               ) : photos.length > 0 ? (
                 <FlatList
@@ -657,7 +931,14 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                   contentContainerStyle={styles.photosList}
                   ListFooterComponent={
                     <Pressable
-                      style={[styles.photoItem, styles.viewAllPhotos]}
+                      style={[
+                        styles.photoItem,
+                        styles.viewAllPhotos,
+                        {
+                          backgroundColor: colors.viewAll,
+                          borderColor: colors.gray,
+                        },
+                      ]}
                       onPress={() =>
                         navigation.navigate("PhotoGallery", {
                           photos,
@@ -676,26 +957,57 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                         })
                       }
                     >
-                      <Text style={styles.viewAllText}>View All</Text>
+                      <Text
+                        style={[
+                          styles.viewAllText,
+                          { color: colors.secondary },
+                        ]}
+                      >
+                        View All
+                      </Text>
                     </Pressable>
                   }
                 />
               ) : (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="images-outline" size={50} color="#9E9E9E" />
-                  <Text style={styles.emptyText}>No photos yet</Text>
-                  <Text style={styles.emptySubtext}>
+                <View
+                  style={[
+                    styles.emptyContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <Ionicons
+                    name="images-outline"
+                    size={50}
+                    color={colors.gray}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No photos yet
+                  </Text>
+                  <Text style={[styles.emptySubtext, { color: colors.gray }]}>
                     Capture your movie experience by taking photos
                   </Text>
                 </View>
               )}
               <View style={styles.nextScreenContainer}>
-                <Text style={styles.label}>Maps</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  Maps
+                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.mapButton,
                     {
                       opacity: pressed ? 0.5 : 1,
+                      backgroundColor: colors.secondary,
                     },
                   ]}
                   onPress={() =>
@@ -708,22 +1020,70 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               </View>
 
               {location ? (
-                <View style={styles.locationContainer}>
-                  <Text style={styles.locationTitle}>📍 Saved Location:</Text>
-                  <Text style={styles.locationText}>Name: {location.name}</Text>
-                  <Text style={styles.locationText}>
+                <View
+                  style={[
+                    styles.locationContainer,
+                    {
+                      backgroundColor: colors.details,
+                      shadowColor: colors.text,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.locationTitle,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    📍 Saved Location:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    Name: {location.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     Address: {location.address}
                   </Text>
-                  <Text style={styles.locationText}>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     Date Added:{" "}
                     {location.dateAdded?.toDate().toLocaleDateString()}
                   </Text>
                 </View>
               ) : (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="location-outline" size={50} color="#9E9E9E" />
-                  <Text style={styles.emptyText}>No saved location</Text>
-                  <Text style={styles.emptySubtext}>
+                <View
+                  style={[
+                    styles.emptyContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={50}
+                    color={colors.gray}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No saved location
+                  </Text>
+                  <Text style={[styles.emptySubtext, { color: colors.gray }]}>
                     Open Maps to add your location where you watched your show.
                   </Text>
                 </View>
@@ -734,7 +1094,7 @@ const MovieDetailsScreen = ({ route, navigation }) => {
 
         <View
           style={{
-            borderBottomColor: "black",
+            borderBottomColor: colors.text,
             borderBottomWidth: StyleSheet.hairlineWidth,
             marginBottom: -10,
           }}
@@ -745,6 +1105,7 @@ const MovieDetailsScreen = ({ route, navigation }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.button,
             ]}
@@ -758,6 +1119,7 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               style={({ pressed }) => [
                 {
                   opacity: pressed ? 0.5 : 1,
+                  backgroundColor: colors.button,
                 },
                 styles.button,
               ]}
@@ -769,6 +1131,7 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               style={({ pressed }) => [
                 {
                   opacity: pressed ? 0.5 : 1,
+                  backgroundColor: colors.button,
                 },
                 styles.starButton,
               ]}
@@ -800,22 +1163,15 @@ const MovieDetailsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#000",
-  },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   scrollView: {
     flex: 1,
@@ -838,7 +1194,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -854,26 +1209,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 5,
     fontWeight: "bold",
-    color: "#000",
   },
   synopsis: {
     fontSize: 15,
-    color: "#000",
   },
   readMore: {
-    color: "#3F51B5",
     marginTop: 5,
   },
   input: {
-    backgroundColor: "#F7F7F7",
     padding: 10,
     borderRadius: 8,
     marginTop: 5,
-    borderColor: "#9E9E9E",
     borderWidth: 1,
   },
   button: {
-    backgroundColor: "#7850bf",
     paddingVertical: 12,
     paddingHorizontal: 100,
     borderRadius: 15,
@@ -883,7 +1232,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   starButton: {
-    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 15,
     alignItems: "center",
@@ -907,7 +1255,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginVertical: 10,
-    color: "#000",
   },
   ratingText: {
     fontSize: 16,
@@ -916,9 +1263,7 @@ const styles = StyleSheet.create({
   synopsisContainer: {
     borderWidth: 1,
     borderRadius: 10,
-    backgroundColor: "#fff",
     padding: 10,
-    color: "#9E9E9E",
   },
   providerItem: {
     flex: 1,
@@ -933,7 +1278,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
-    color: "#000000",
     marginBottom: 2,
     width: "100%",
     numberOfLines: 1,
@@ -941,11 +1285,15 @@ const styles = StyleSheet.create({
   },
   castRole: {
     fontSize: 12,
-    color: "#9E9E9E",
     textAlign: "center",
     width: "100%",
     numberOfLines: 1,
     ellipsizeMode: "tail",
+  },
+  castContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   nextScreenContainer: {
     flexDirection: "row",
@@ -953,7 +1301,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   nextScreenText: {
-    color: "#3F51B5",
     fontWeight: "500",
     marginTop: 5,
     fontSize: 14,
@@ -972,9 +1319,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  activeTabButton: {
-    backgroundColor: "#3F51B5",
-  },
   tabText: {
     fontSize: 18,
     color: "#FFFFFF",
@@ -991,12 +1335,15 @@ const styles = StyleSheet.create({
   genreText: {
     marginTop: 5,
     fontSize: 15,
-    color: "#000000",
+  },
+  providers: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 10,
   },
   text: {
     margin: 5,
     fontSize: 15,
-    color: "#000000",
   },
   details: {
     flexDirection: "row",
@@ -1004,14 +1351,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 5,
-    backgroundColor: "#f7f7f7",
   },
   detailsTitle: {
-    color: "#9E9E9E",
     fontSize: 18,
   },
   detailsText: {
-    color: "#000000",
     fontSize: 18,
   },
   videoContainer: {
@@ -1022,7 +1366,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 10,
     alignSelf: "center",
-    color: "#000000",
     textAlign: "center",
     flexWrap: "wrap",
     width: 340,
@@ -1035,8 +1378,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 15,
     borderRadius: 8,
-    backgroundColor: "#f7f7f7",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1045,22 +1386,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#000000",
   },
   locationText: {
     fontSize: 16,
-    color: "#000000",
     marginBottom: 5,
   },
   noLocationText: {
     fontSize: 16,
-    color: "#9E9E9E",
     textAlign: "center",
     marginBottom: 20,
   },
   mapButton: {
     flexDirection: "row",
-    backgroundColor: "#3F51B5",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -1080,14 +1417,12 @@ const styles = StyleSheet.create({
   },
   photosCount: {
     fontSize: 16,
-    color: "#000000",
   },
   photoButtonsContainer: {
     flexDirection: "row",
   },
   photoButton: {
     flexDirection: "row",
-    backgroundColor: "#3F51B5",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -1129,31 +1464,25 @@ const styles = StyleSheet.create({
   viewAllPhotos: {
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f8f8",
     borderWidth: 1,
-    borderColor: "#9E9E9E",
   },
   viewAllText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#3F51B5",
   },
   emptyContainer: {
     padding: 20,
     alignItems: "center",
-    backgroundColor: "#f7f7f7",
     borderRadius: 8,
     marginBottom: 20,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#000000",
     marginTop: 10,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#9E9E9E",
     textAlign: "center",
     marginTop: 5,
   },
@@ -1161,7 +1490,6 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f7f7f7",
     borderRadius: 8,
     marginBottom: 20,
   },

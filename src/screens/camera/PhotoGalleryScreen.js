@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   View,
   Image,
@@ -8,10 +8,15 @@ import {
   Text,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const PhotoGalleryScreen = ({ navigation, route }) => {
   const { photos, onAddPhoto, onViewPhoto, showId, type, onAddFromGallery } =
     route.params;
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const renderPhoto = ({ item, index }) => (
     <Pressable
@@ -24,23 +29,46 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
-          <Text style={styles.galleryTitle}>Photos</Text>
+          <Text
+            style={[
+              styles.galleryTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Photos
+          </Text>
           <View style={styles.headerButtons}>
-            <Pressable style={styles.addButton} onPress={onAddPhoto}>
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.camera }]}
+              onPress={onAddPhoto}
+            >
               <Ionicons name="camera-outline" size={24} color="white" />
             </Pressable>
-            <Pressable style={styles.addButton} onPress={onAddFromGallery}>
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.camera }]}
+              onPress={onAddFromGallery}
+            >
               <Ionicons name="image-outline" size={24} color="white" />
             </Pressable>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
 
         {photos && photos.length > 0 ? (
           <FlatList
@@ -51,10 +79,24 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
             showsVerticalScrollIndicator={false}
           />
         ) : (
-          <View style={styles.emptyState}>
+          <View
+            style={[styles.emptyState, { backgroundColor: colors.viewAll }]}
+          >
             <Ionicons name="images-outline" size={48} color="#9E9E9E" />
-            <Text style={styles.emptyText}>No photos yet</Text>
-            <Text style={styles.emptySubtext}>
+            <Text
+              style={[
+                styles.emptyText,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              No photos yet
+            </Text>
+            <Text
+              style={[
+                styles.emptySubtext,
+                { color: colors.subtitle, opacity: colors.opacity },
+              ]}
+            >
               Capture memories from your movie experience
             </Text>
           </View>
@@ -67,12 +109,10 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     paddingHorizontal: 5,
@@ -83,7 +123,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
@@ -96,8 +135,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10, // Add spacing between buttons
   },
-  addButton: {
-    backgroundColor: "#007BFF",
+  button: {
     borderRadius: 30,
     width: 40,
     height: 40,
@@ -118,7 +156,6 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f8f8",
     borderRadius: 8,
     padding: 20,
     height: 200,
@@ -127,11 +164,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginVertical: 8,
-    color: "#888",
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#aaa",
     textAlign: "center",
   },
 });

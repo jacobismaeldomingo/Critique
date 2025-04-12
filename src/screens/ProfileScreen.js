@@ -1,5 +1,11 @@
 // screens/ProfileScreen.js
-import React, { useState, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useContext,
+  useRef,
+} from "react";
 import {
   View,
   Text,
@@ -8,6 +14,10 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Animated,
+  Easing,
+  Image,
+  Dimensions,
 } from "react-native";
 import { firebase_auth, db } from "../../firebaseConfig.js";
 import {
@@ -24,7 +34,15 @@ import { getWatchedShows } from "../services/firestore.js";
 import { fetchGenres } from "../services/tmdb";
 import GenreModal from "../components/GenreModal.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "react-native-vector-icons";
+import {
+  Ionicons,
+  MaterialIcons,
+  FontAwesome,
+} from "react-native-vector-icons";
+import { ThemeContext } from "../components/ThemeContext";
+import { getTheme } from "../components/theme";
+
+const { width } = Dimensions.get("window");
 
 const ProfileScreen = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -39,6 +57,57 @@ const ProfileScreen = ({ navigation }) => {
   const [isGenreModalVisible, setIsGenreModalVisible] = useState(false);
   const [genres, setGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
+
+  const derivedColors = {
+    cardBackground: theme === "dark" ? colors.details : colors.viewAll,
+  };
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const statsScale = useRef(new Animated.Value(0.8)).current;
+
+  // Start animations when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+      Animated.spring(statsScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  // Button press animation
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   // Fetch user profile data on component mount
   useFocusEffect(
@@ -101,6 +170,26 @@ const ProfileScreen = ({ navigation }) => {
     setIsUsernameAvailable(querySnapshot.empty);
   };
 
+  // Validate phone number format
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+    return phoneRegex.test(phone);
+  };
+
+  // Validate birthday format
+  const validateBirthday = (date) => {
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) return false;
+
+    const [year, month, day] = date.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    return (
+      dateObj.getFullYear() === year &&
+      dateObj.getMonth() === month - 1 &&
+      dateObj.getDate() === day
+    );
+  };
+
   // Handle save button click
   const handleSave = async () => {
     let profileErrors = {};
@@ -108,14 +197,22 @@ const ProfileScreen = ({ navigation }) => {
     // Check if fields are empty
     if (!username.trim()) {
       profileErrors.username = "Username is required.";
+    } else if (username.length < 3) {
+      profileErrors.username = "Username must be at least 3 characters.";
     }
 
+    // Phone number validation
     if (!phoneNumber.trim()) {
       profileErrors.phoneNumber = "Phone Number is required.";
+    } else if (!validatePhoneNumber(phoneNumber)) {
+      profileErrors.phoneNumber = "Please use format 123-456-7890";
     }
 
+    // Birthday validation
     if (!birthday.trim()) {
       profileErrors.birthday = "Birthday is required.";
+    } else if (!validateBirthday(birthday)) {
+      profileErrors.birthday = "Please use format YYYY-MM-DD";
     }
 
     if (Object.keys(profileErrors).length > 0) {
@@ -134,376 +231,509 @@ const ProfileScreen = ({ navigation }) => {
       const user = firebase_auth.currentUser;
       if (user) {
         // Update user profile in Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
-          phoneNumber,
-          birthday,
-        });
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            username,
+            email,
+            phoneNumber,
+            birthday,
+          },
+          { merge: true }
+        );
         await AsyncStorage.setItem("username", username);
         await AsyncStorage.setItem("email", email);
 
         Alert.alert("Success", "Profile updated successfully!");
         setIsEditing(false);
+        setErrors({}); // Clear errors on success
       }
     } catch (error) {
-      setErrors(error.message);
+      Alert.alert("Error", error.message);
+      setErrors({ general: error.message });
     }
   };
 
-  const handleBack = () => {
-    setErrors("");
-    setIsEditing(false);
+  const renderProfileField = (
+    title,
+    value,
+    iconName,
+    fieldName,
+    isEditable = false,
+    onChangeText = null,
+    placeholder = "",
+    keyboardType = "default"
+  ) => {
+    return (
+      <View>
+        <Animated.View
+          style={[
+            styles.profileFieldContainer,
+            {
+              backgroundColor: derivedColors.cardBackground,
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+              borderColor: errors[fieldName] ? colors.error : "transparent",
+              borderWidth: errors[fieldName] ? 1 : 0,
+            },
+          ]}
+        >
+          <View style={styles.fieldIcon}>
+            <MaterialIcons name={iconName} size={22} color={colors.icon} />
+          </View>
+          <View style={styles.fieldContent}>
+            <Text style={[styles.fieldLabel, { color: colors.subtitle }]}>
+              {title}
+            </Text>
+            {isEditing && isEditable ? (
+              <>
+                <TextInput
+                  style={[
+                    styles.fieldInput,
+                    {
+                      color: colors.text,
+                      borderBottomColor: errors[fieldName]
+                        ? colors.error
+                        : colors.gray,
+                    },
+                  ]}
+                  value={value}
+                  onChangeText={(text) => {
+                    onChangeText(text);
+                    // Clear error when user starts typing
+                    if (errors[fieldName]) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        [fieldName]: undefined,
+                      }));
+                    }
+                  }}
+                  placeholder={placeholder}
+                  placeholderTextColor={colors.gray}
+                  keyboardType={keyboardType}
+                />
+                {errors[fieldName] && (
+                  <Text style={[styles.errorText, { color: colors.error }]}>
+                    {errors[fieldName]}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text style={[styles.fieldValue, { color: colors.text }]}>
+                {value || "Not set"}
+              </Text>
+            )}
+          </View>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  const renderStatCard = (title, value, iconName) => {
+    return (
+      <Animated.View
+        style={[
+          styles.statCard,
+          {
+            backgroundColor: derivedColors.cardBackground,
+            transform: [{ scale: statsScale }],
+          },
+        ]}
+      >
+        <MaterialIcons name={iconName} size={24} color={colors.primary} />
+        <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+        <Text style={[styles.statLabel, { color: colors.subtitle }]}>
+          {title}
+        </Text>
+      </Animated.View>
+    );
+  };
+
+  const handleEditButton = () => {
+    setIsEditing(!isEditing);
+    setErrors({});
   };
 
   return (
-    <>
-      <View style={styles.upperContainer} />
-      <ScrollView
-        style={styles.container}
-        keyboardShouldPersistTaps="handled"
-        nestedScrollEnabled={true}
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
+        ]}
       >
-        <View style={styles.headerContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Ionicons name="menu" size={28} color="#3F51B5" />
-          </Pressable>
-          <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Profile</Text>
-          </View>
-        </View>
-        <View style={styles.divider} />
+        <Pressable onPress={() => navigation.navigate("Settings")}>
+          <Ionicons name="menu" size={28} color="#fff" />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>Profile</Text>
+        <View style={{ width: 28 }} /> {/* Spacer for alignment */}
+      </Animated.View>
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Profile Picture and Edit Button */}
+        <Animated.View
+          style={[
+            styles.profileHeader,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            },
+          ]}
+        >
+          <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+            <Pressable
+              onPressIn={animateButtonPress}
+              onPress={handleEditButton}
+              style={[styles.editButton, { backgroundColor: colors.primary }]}
+            >
+              <Text style={styles.editButtonText}>
+                {isEditing ? "Cancel" : "Edit Profile"}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        </Animated.View>
+
+        {/* Profile Fields */}
+        {renderProfileField(
+          "Username",
+          username,
+          "person-outline",
+          "username",
+          true,
+          (text) => {
+            setUsername(text);
+            checkUsernameAvailability(text);
+          },
+          "Enter your username",
+          "default"
+        )}
+
+        {renderProfileField("Email", email, "email", "email")}
 
         {isEditing ? (
           <>
-            <View style={[styles.profileEditContainer, { marginTop: 10 }]}>
-              <Text style={styles.profileTitle}>Username:</Text>
-              <TextInput
-                style={styles.input}
-                value={username}
-                onChangeText={(text) => {
-                  setUsername(text);
-                  checkUsernameAvailability(text);
-                }}
-                placeholder="Enter username"
-                placeholderTextColor="#888"
-              />
-            </View>
-
-            {!isUsernameAvailable && (
-              <Text style={styles.errorText}>Username is already taken.</Text>
+            {renderProfileField(
+              "Phone",
+              phoneNumber,
+              "phone",
+              "phoneNumber",
+              true,
+              (text) => {
+                // Format phone number as 999-999-9999
+                const formattedText = text
+                  .replace(/\D/g, "") // Remove non-digits
+                  .match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+                setPhoneNumber(
+                  !formattedText[2]
+                    ? formattedText[1]
+                    : `${formattedText[1]}-${formattedText[2]}` +
+                        (formattedText[3] ? `-${formattedText[3]}` : "")
+                );
+                // Clear error when typing
+                if (errors.phoneNumber) {
+                  setErrors((prev) => ({ ...prev, phoneNumber: undefined }));
+                }
+              },
+              "123-456-7890",
+              "phone-pad"
+            )}
+            {renderProfileField(
+              "Birthday",
+              birthday,
+              "cake",
+              "birthday",
+              true,
+              (text) => {
+                // Format as YYYY-MM-DD
+                const formattedText = text
+                  .replace(/\D/g, "") // Remove non-digits
+                  .match(/(\d{0,4})(\d{0,2})(\d{0,2})/);
+                setBirthday(
+                  !formattedText[2]
+                    ? formattedText[1]
+                    : `${formattedText[1]}-${formattedText[2]}` +
+                        (formattedText[3] ? `-${formattedText[3]}` : "")
+                );
+                // Clear error when typing
+                if (errors.birthday) {
+                  setErrors((prev) => ({ ...prev, birthday: undefined }));
+                }
+              },
+              "YYYY-MM-DD",
+              "numeric"
             )}
 
-            {errors.username ? (
-              <Text style={styles.errorText}>{errors.username}</Text>
-            ) : null}
-
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Email</Text>
-              <TextInput
-                style={styles.nonEditableText}
-                value={email}
-                onChangeText={setPhoneNumber}
-                placeholder="Enter phone number"
-                placeholderTextColor="#888"
-                editable={false}
-              />
-            </View>
-
-            <View style={styles.profileEditContainer}>
-              <Text style={styles.profileTitle}>
-                Phone Number (999-999-9999):
+            {/* Display general errors */}
+            {errors.general && (
+              <Text
+                style={[
+                  styles.errorText,
+                  {
+                    textAlign: "center",
+                    marginBottom: 10,
+                    color: colors.error,
+                  },
+                ]}
+              >
+                {errors.general}
               </Text>
-              <TextInput
-                style={styles.input}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="Enter phone number"
-                placeholderTextColor="#888"
-              />
-            </View>
+            )}
 
-            {errors.phoneNumber ? (
-              <Text style={styles.errorText}>{errors.phoneNumber}</Text>
-            ) : null}
-
-            <View style={styles.profileEditContainer}>
-              <Text style={styles.profileTitle}>Birthday (YYYY-MM-DD):</Text>
-              <TextInput
-                style={styles.input}
-                value={birthday}
-                onChangeText={setBirthday}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#888"
-              />
-            </View>
-
-            {errors.birthday ? (
-              <Text style={styles.errorText}>{errors.birthday}</Text>
-            ) : null}
-
-            <View style={styles.buttonContainer}>
+            {/* Save Button */}
+            <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
               <Pressable
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                  styles.editButton,
-                ]}
+                onPressIn={animateButtonPress}
                 onPress={handleSave}
+                style={[styles.saveButton, { backgroundColor: colors.primary }]}
               >
-                <Text style={styles.buttonText}>Save</Text>
+                <Text style={styles.saveButtonText}>Save Changes</Text>
               </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                  styles.editButton,
-                ]}
-                onPress={handleBack}
-              >
-                <Text style={styles.buttonText}>Back</Text>
-              </Pressable>
-            </View>
+            </Animated.View>
           </>
         ) : (
           <>
-            <View>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                ]}
-                onPress={() => setIsEditing(true)}
-              >
-                <Text style={styles.buttonText}>Edit Profile</Text>
-              </Pressable>
-            </View>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Username</Text>
-              <Text style={styles.profileText}>{username}</Text>
-            </View>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Email</Text>
-              <Text style={styles.profileText}>{email}</Text>
-            </View>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Phone Number</Text>
-              <Text style={styles.profileText}>{phoneNumber}</Text>
-            </View>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Birthday</Text>
-              <Text style={styles.profileText}>{birthday}</Text>
-            </View>
-
-            <View style={styles.genreContainer}>
-              <View>
-                <Text style={styles.genreTitle}>Favorite Genres</Text>
-                {selectedGenres.length > 0 ? (
-                  <Text style={styles.genresText}>
-                    {genres
-                      .filter((genre) => selectedGenres.includes(genre.id))
-                      .map((genre) => genre.name)
-                      .join(", ")}
-                  </Text>
-                ) : (
-                  <Text style={styles.profileText}>
-                    No favorite genres selected.
-                  </Text>
-                )}
-              </View>
-
-              <Pressable
-                style={({ pressed }) => [
-                  {
-                    opacity: pressed ? 0.5 : 1,
-                  },
-                  styles.preferencesButton,
-                ]}
-                onPress={() => setIsGenreModalVisible(true)}
-              >
-                <Ionicons name="add-circle-outline" size={26} color="#7850bf" />
-              </Pressable>
-            </View>
-
-            <View
-              style={{
-                borderBottomColor: "black",
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                marginVertical: 10,
-              }}
-            />
-
-            <Text style={styles.stats}>Your Stats</Text>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>Movies Watched</Text>
-              <Text style={styles.profileText}>{movies}</Text>
-            </View>
-            <View style={styles.profileContainer}>
-              <Text style={styles.profileTitle}>TV Series Watched</Text>
-              <Text style={styles.profileText}>{series}</Text>
-            </View>
+            {renderProfileField("Phone", phoneNumber, "phone", "phoneNumber")}
+            {renderProfileField("Birthday", birthday, "cake", "birthday")}
           </>
         )}
 
-        <GenreModal
-          isVisible={isGenreModalVisible}
-          onClose={() => setIsGenreModalVisible(false)}
-        />
+        {/* Favorite Genres */}
+        <Animated.View
+          style={[
+            styles.sectionContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            },
+          ]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Favorite Genres
+            </Text>
+            <Pressable
+              onPress={() => setIsGenreModalVisible(true)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <FontAwesome name="edit" size={20} color={colors.primary} />
+            </Pressable>
+          </View>
+
+          {selectedGenres.length > 0 ? (
+            <View style={styles.genreChipsContainer}>
+              {genres
+                .filter((genre) => selectedGenres.includes(genre.id))
+                .map((genre) => (
+                  <View
+                    key={genre.id}
+                    style={[styles.genreChip, { backgroundColor: genre.color }]}
+                  >
+                    <Text style={[styles.genreChipText]}>{genre.name}</Text>
+                  </View>
+                ))}
+            </View>
+          ) : (
+            <Text style={[styles.emptyText, { color: colors.subtitle }]}>
+              No favorite genres selected yet
+            </Text>
+          )}
+        </Animated.View>
+
+        {/* Stats Section */}
+        <Animated.View
+          style={[
+            styles.sectionContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Your Stats
+          </Text>
+          <View style={styles.statsContainer}>
+            {renderStatCard("Movies", movies, "local-movies")}
+            {renderStatCard("TV Shows", series, "tv")}
+          </View>
+        </Animated.View>
       </ScrollView>
-    </>
+
+      {/* Genre Modal */}
+      <GenreModal
+        isVisible={isGenreModalVisible}
+        onClose={() => setIsGenreModalVisible(false)}
+        onSave={(updatedGenres) => {
+          setSelectedGenres(updatedGenres);
+        }}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: 60,
-    backgroundColor: "#7850bf",
-  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
   },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  headerWrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
+  scrollContent: {
+    paddingBottom: 30,
   },
   header: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  divider: {
-    borderBottomColor: "#9E9E9E",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  profileContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: "lightgray",
-  },
-  profileTitle: {
-    color: "black",
-    fontSize: 18,
-    fontWeight: "500",
-  },
-  profileText: {
-    fontSize: 18,
-    fontWeight: "500",
-    paddingRight: 5,
-  },
-  profileEditContainer: {
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: "lightgray",
-  },
-  nonEditableText: {
-    fontSize: 18,
-    fontWeight: "500",
-    paddingRight: 5,
-  },
-  input: {
-    width: "100%",
-    height: 30,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    backgroundColor: "#fff",
-    fontSize: 18,
-    marginTop: 10,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  button: {
-    backgroundColor: "#7850bf",
-    padding: 12,
-    borderRadius: 8,
-    marginVertical: 16,
-    width: 150,
     alignItems: "center",
-    alignSelf: "center",
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 10,
   },
-  editButton: {
-    backgroundColor: "#7850bf",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 5,
-    width: 150,
-    alignItems: "center",
-    alignSelf: "center",
-  },
-  preferencesButton: {
-    alignSelf: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  errorText: {
-    color: "#FF5252",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 10,
-  },
-  stats: {
+  headerTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
+  },
+  profileHeader: {
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  avatarContainer: {
+    position: "relative",
+    marginBottom: 15,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: "#7850bf",
+  },
+  editAvatarButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#7850bf",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    elevation: 3,
+  },
+  editButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  saveButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginTop: 20,
+    marginHorizontal: 20,
+    elevation: 3,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
     textAlign: "center",
   },
-  genreTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 5,
-  },
-  genreContainer: {
+  profileFieldContainer: {
     flexDirection: "row",
-    backgroundColor: "lightgray",
-    borderRadius: 10,
-    justifyContent: "space-between",
-    padding: 10,
+    alignItems: "center",
+    padding: 15,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderRadius: 12,
+    elevation: 1,
   },
-  genresText: {
-    fontSize: 18,
+  fieldIcon: {
+    marginRight: 15,
+  },
+  fieldContent: {
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+    opacity: 0.8,
+  },
+  fieldValue: {
+    fontSize: 16,
     fontWeight: "500",
-    paddingRight: 5,
+  },
+  fieldInput: {
+    fontSize: 16,
+    fontWeight: "500",
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    width: "100%",
+  },
+  sectionContainer: {
+    marginTop: 25,
+    marginHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  genreChipsContainer: {
+    flexDirection: "row",
     flexWrap: "wrap",
+  },
+  genreChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  genreChipText: {
+    fontSize: 14,
+    color: "#fff",
+  },
+  emptyText: {
+    fontSize: 14,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginVertical: 10,
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  statCard: {
+    width: width * 0.4,
+    alignItems: "center",
+    padding: 20,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginVertical: 5,
+  },
+  statLabel: {
+    fontSize: 14,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 8,
   },
 });
 

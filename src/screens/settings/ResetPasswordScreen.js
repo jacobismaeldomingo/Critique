@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TextInput,
@@ -10,10 +10,14 @@ import {
 import { Ionicons } from "react-native-vector-icons";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { firebase_auth } from "../../../firebaseConfig";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const ResetPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const handleResetPassword = async () => {
     setError("");
@@ -42,8 +46,13 @@ const ResetPasswordScreen = ({ navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -56,39 +65,64 @@ const ResetPasswordScreen = ({ navigation }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
               style={{ marginRight: 50 }}
+              opacity={colors.opacity}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Reset Password</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Reset Password
+            </Text>
           </View>
         </View>
         <View style={styles.divider} />
-        <Text style={styles.text}>Email:</Text>
+        <Text
+          style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+        >
+          Email:
+        </Text>
         <View
           style={[
             styles.inputContainer,
-            error ? styles.inputContainerError : null,
+            { borderColor: colors.gray },
+            error ? { borderColor: colors.error } : null,
           ]}
         >
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
             placeholder="Enter your email or username"
             value={email}
             onChangeText={setEmail}
-            placeholderTextColor={"#888"}
+            placeholderTextColor={colors.gray}
           />
           {error ? (
-            <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+            <Ionicons
+              name="alert-circle-outline"
+              size={20}
+              color={colors.error}
+            />
           ) : null}
         </View>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {error ? (
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            {error}
+          </Text>
+        ) : null}
 
         <Pressable
           style={({ pressed }) => [
             {
               opacity: pressed ? 0.5 : 1,
+              backgroundColor: colors.button,
             },
             styles.button,
           ]}
@@ -135,14 +169,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
-  },
-  inputContainerError: {
-    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
@@ -154,7 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

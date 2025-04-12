@@ -1,14 +1,18 @@
 // screens/SettingsScreen.js
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, Pressable, StyleSheet, Alert, Switch } from "react-native";
 import { signOut } from "firebase/auth";
 import { firebase_auth } from "../../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const SettingsScreen = ({ navigation }) => {
-  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const { theme, toggleTheme, useSystemTheme, toggleUseSystemTheme } =
+    useContext(ThemeContext);
+  const colors = getTheme(theme);
+  const isDarkMode = theme === "dark";
 
-  const toggleDarkMode = () => setIsDarkMode((previousState) => !previousState);
   const handleLogout = async () => {
     Alert.alert(
       "Confirm Logout",
@@ -40,8 +44,13 @@ const SettingsScreen = ({ navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -54,112 +63,203 @@ const SettingsScreen = ({ navigation }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
               style={{ marginRight: 50 }}
+              opacity={colors.opacity}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Settings</Text>
+            <Text style={[styles.header, { color: colors.text }]}>
+              Settings
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
-        {/* Notifications Section */}
-        <Text style={styles.sectionHeader}>Notifications</Text>
-        <Pressable
-          style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1 },
-            styles.itemContainer,
-          ]}
-          onPress={() => navigation.navigate("Notifications")}
-        >
-          <View style={styles.itemContent}>
-            <Ionicons name="notifications-outline" size={24} color="black" />
-            <Text style={styles.itemText}>Notification Settings</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="gray" />
-        </Pressable>
-        <View style={styles.itemBorder} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
 
-        {/* Appearance Section */}
-        <Text style={styles.sectionHeader}>Appearance</Text>
-        <View style={styles.itemContainer}>
-          <View style={styles.itemContent}>
-            <Ionicons name="moon-outline" size={24} color="black" />
-            <Text style={styles.itemText}>Dark Mode</Text>
-          </View>
-          <Switch
-            trackColor={{ false: "#9E9E9E", true: "#7850bf" }}
-            thumbColor={isDarkMode ? "#ffffff" : "#f4f3f4"}
-            onValueChange={toggleDarkMode}
-            value={isDarkMode}
+        <View style={{ paddingHorizontal: 5 }}>
+          {/* Notifications Section */}
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>
+            Notifications
+          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.5 : 1 },
+              styles.itemContainer,
+            ]}
+            onPress={() => navigation.navigate("Notifications")}
+          >
+            <View style={styles.itemContent}>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={colors.icon}
+              />
+              <Text style={[styles.itemText, { color: colors.text }]}>
+                Notification Settings
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.grey} />
+          </Pressable>
+          <View
+            style={[
+              styles.itemBorder,
+              { borderBottomColor: colors.itemBorder },
+            ]}
           />
-        </View>
-        <View style={styles.itemBorder} />
 
-        {/* Security Section */}
-        <Text style={styles.sectionHeader}>Security</Text>
-        <Pressable
-          style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1 },
-            styles.itemContainer,
-          ]}
-          onPress={() => navigation.navigate("ResetPassword")}
-        >
-          <View style={styles.itemContent}>
-            <Ionicons name="lock-closed-outline" size={24} color="black" />
-            <Text style={styles.itemText}>Reset Password</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="gray" />
-        </Pressable>
-        <View style={styles.itemBorder} />
+          {/* Appearance Section */}
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>
+            Appearance
+          </Text>
 
-        {/* Help & Support Section */}
-        <Text style={styles.sectionHeader}>Help & Support</Text>
-        {/* <Pressable
-          style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1 },
-            styles.itemContainer,
-          ]}
-          onPress={() => navigation.navigate("Help")}
-        >
-          <View style={styles.itemContent}>
-            <Ionicons name="help-circle-outline" size={24} color="black" />
-            <Text style={styles.itemText}>Help</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color="gray" />
-        </Pressable> */}
-        <Pressable
-          style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1 },
-            styles.itemContainer,
-          ]}
-          onPress={() => navigation.navigate("About")}
-        >
-          <View style={styles.itemContent}>
-            <Ionicons
-              name="information-circle-outline"
-              size={24}
-              color="black"
+          {/* System Theme Toggle */}
+          <View style={styles.itemContainer}>
+            <View style={styles.itemContent}>
+              <Ionicons
+                name="phone-portrait-outline"
+                size={24}
+                color={colors.icon}
+              />
+              <Text style={[styles.itemText, { color: colors.text }]}>
+                Use System Theme
+              </Text>
+            </View>
+            <Switch
+              trackColor={{
+                false: colors.switchTrackFalse,
+                true: colors.switchTrackTrue,
+              }}
+              thumbColor={
+                useSystemTheme
+                  ? colors.switchThumbTrue
+                  : colors.switchThumbFalse
+              }
+              onValueChange={toggleUseSystemTheme}
+              value={useSystemTheme}
             />
-            <Text style={styles.itemText}>About</Text>
           </View>
-          <Ionicons name="chevron-forward" size={24} color="gray" />
-        </Pressable>
-        <View style={styles.itemBorder} />
+          <View
+            style={[
+              styles.itemBorder,
+              { borderBottomColor: colors.itemBorder },
+            ]}
+          />
 
-        {/* Logout Section */}
-        <Pressable
-          style={({ pressed }) => [
-            { opacity: pressed ? 0.5 : 1 },
-            styles.logoutContainer,
-          ]}
-          onPress={handleLogout}
-        >
-          <View style={styles.itemContent}>
-            <Ionicons name="log-out-outline" size={24} color="#FF5252" />
-            <Text style={[styles.itemText, { color: "#FF5252" }]}>Log Out</Text>
+          {/* Dark Mode Toggle - Disabled if using system theme */}
+          <View style={styles.itemContainer}>
+            <View style={styles.itemContent}>
+              <Ionicons
+                name="moon-outline"
+                size={24}
+                color={useSystemTheme ? colors.gray : colors.icon}
+              />
+              <Text
+                style={[
+                  styles.itemText,
+                  {
+                    color: useSystemTheme ? colors.gray : colors.text,
+                  },
+                ]}
+              >
+                Dark Mode
+              </Text>
+            </View>
+            <Switch
+              trackColor={{
+                false: colors.switchTrackFalse,
+                true: colors.switchTrackTrue,
+              }}
+              thumbColor={
+                isDarkMode ? colors.switchThumbTrue : colors.switchThumbFalse
+              }
+              onValueChange={toggleTheme}
+              value={isDarkMode}
+              disabled={useSystemTheme}
+            />
           </View>
-        </Pressable>
+          <View
+            style={[
+              styles.itemBorder,
+              { borderBottomColor: colors.itemBorder },
+            ]}
+          />
+
+          {/* Security Section */}
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>
+            Security
+          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.5 : 1 },
+              styles.itemContainer,
+            ]}
+            onPress={() => navigation.navigate("ResetPassword")}
+          >
+            <View style={styles.itemContent}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={24}
+                color={colors.icon}
+              />
+              <Text style={[styles.itemText, { color: colors.text }]}>
+                Reset Password
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.grey} />
+          </Pressable>
+          <View
+            style={[
+              styles.itemBorder,
+              { borderBottomColor: colors.itemBorder },
+            ]}
+          />
+
+          {/* About Section */}
+          <Text style={[styles.sectionHeader, { color: colors.text }]}>
+            Credits & Info
+          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.5 : 1 },
+              styles.itemContainer,
+            ]}
+            onPress={() => navigation.navigate("About")}
+          >
+            <View style={styles.itemContent}>
+              <Ionicons
+                name="information-circle-outline"
+                size={24}
+                color={colors.icon}
+              />
+              <Text style={[styles.itemText, { color: colors.text }]}>
+                About Critique
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={colors.grey} />
+          </Pressable>
+          <View
+            style={[
+              styles.itemBorder,
+              { borderBottomColor: colors.itemBorder },
+            ]}
+          />
+
+          {/* Logout Section */}
+          <Pressable
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.5 : 1 },
+              styles.logoutContainer,
+            ]}
+            onPress={handleLogout}
+          >
+            <View style={styles.itemContent}>
+              <Ionicons name="log-out-outline" size={24} color={colors.error} />
+              <Text style={[styles.itemText, { color: colors.error }]}>
+                Log Out
+              </Text>
+            </View>
+          </Pressable>
+        </View>
       </View>
     </>
   );
@@ -168,12 +268,10 @@ const SettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -192,7 +290,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
@@ -217,7 +314,6 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   itemBorder: {
-    borderBottomColor: "#e0e0e0",
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   logoutContainer: {

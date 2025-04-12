@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -25,16 +25,19 @@ import {
   savePhotoToFirestore,
   getShowPhotos,
   deletePhoto,
+  getWatchedEpisodes,
 } from "../../services/firestore";
+import { useFocusEffect } from "@react-navigation/native";
 import { firebase_auth } from "../../../firebaseConfig";
 import CategoryModal from "../../components/CategoryModal";
 import RateModal from "../../components/RateModal";
 import { Ionicons } from "react-native-vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import YoutubePlayer from "react-native-youtube-iframe";
 import * as ImagePicker from "expo-image-picker";
 import { uploadImageToCloudinary } from "../../services/cloudinary";
 import LoadingItem from "../../components/LoadingItem";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const TVSeriesDetailsScreen = ({ route, navigation }) => {
   const { showId } = route.params;
@@ -73,93 +76,85 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
   const imageHeight = width * (160 / 440);
   const ratingSize = width * 0.05;
 
-  useEffect(() => {
-    const loadTVSeriesDetails = async () => {
-      const seriesDetails = await fetchTVSeriesDetails(showId);
-      setTVSeries(seriesDetails);
-      setApiRating(Number(seriesDetails.vote_average) / 2);
-      setSeasons(seriesDetails.seasons);
-      setGenres(seriesDetails.genres);
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
-      const loadProviders = async () => {
-        const providersDetails = await fetchTVSeriesProviders(showId);
-        setProviders(providersDetails);
-      };
+  useFocusEffect(
+    useCallback(() => {
+      const loadTVSeriesDetails = async () => {
+        const seriesDetails = await fetchTVSeriesDetails(showId);
+        setTVSeries(seriesDetails);
+        setApiRating((Number(seriesDetails.vote_average) / 2).toFixed(2));
+        setSeasons(seriesDetails.seasons);
+        setGenres(seriesDetails.genres);
 
-      const loadCast = async () => {
-        const castDetails = await fetchTVSeriesCast(showId);
-        setCast(castDetails);
-      };
+        const loadProviders = async () => {
+          const providersDetails = await fetchTVSeriesProviders(showId);
+          setProviders(providersDetails);
+        };
 
-      const loadVideos = async () => {
-        const videoDetails = await fetchTVSeriesVideos(showId);
-        setVideos(videoDetails);
-      };
+        const loadCast = async () => {
+          const castDetails = await fetchTVSeriesCast(showId);
+          setCast(castDetails);
+        };
 
-      const loadPhotos = async () => {
-        try {
-          const userId = firebase_auth.currentUser.uid;
-          const photos = await getShowPhotos(userId, showId, "tvSeries");
-          setPhotos(photos);
-        } catch (error) {
-          console.error("Error loading photos:", error);
-          Alert.alert("Error", "Failed to load photos");
-        }
-      };
+        const loadVideos = async () => {
+          const videoDetails = await fetchTVSeriesVideos(showId);
+          setVideos(videoDetails);
+        };
 
-      if (firebase_auth.currentUser) {
-        const savedData = await getTVSeriesData(
-          firebase_auth.currentUser.uid,
-          showId
-        );
-        if (savedData) {
-          setUserReview(savedData.review || "");
-          setCategory(savedData.category || "");
-          setUserRating(savedData.rating || 0);
-          setLocation(savedData.location);
-          setPhotos(savedData.photos || []);
-          setIsAdded(true);
-        }
-      }
-
-      // Load watched episodes from AsyncStorage
-      const loadWatchedEpisodes = async () => {
-        try {
-          const allKeys = await AsyncStorage.getAllKeys();
-          // Filter keys that are related to watched episodes (keys with `watchedEpisodes_{showId}_{seasonNumber}`)
-          const watchedKeys = allKeys.filter((key) =>
-            key.startsWith(`watchedEpisodes_${showId}_`)
-          );
-          let allWatchedEpisodes = [];
-
-          // Fetch all watched episodes from the filtered keys
-          for (const key of watchedKeys) {
-            const savedWatchedEpisodes = await AsyncStorage.getItem(key);
-            if (savedWatchedEpisodes) {
-              const seasonNumber = key.split("_")[2]; // Extract season number from the key
-              allWatchedEpisodes[seasonNumber] =
-                JSON.parse(savedWatchedEpisodes);
-            }
+        const loadPhotos = async () => {
+          try {
+            const userId = firebase_auth.currentUser.uid;
+            const photos = await getShowPhotos(userId, showId, "tvSeries");
+            setPhotos(photos);
+          } catch (error) {
+            console.error("Error loading photos:", error);
+            Alert.alert("Error", "Failed to load photos");
           }
+        };
 
-          setWatchedEpisodes(allWatchedEpisodes);
-        } catch (error) {
-          console.error(
-            "Failed to load watched episodes from AsyncStorage",
-            error
+        if (firebase_auth.currentUser) {
+          const savedData = await getTVSeriesData(
+            firebase_auth.currentUser.uid,
+            showId
           );
+          if (savedData) {
+            setUserReview(savedData.review || "");
+            setCategory(savedData.category || "");
+            setUserRating(savedData.rating || 0);
+            setLocation(savedData.location);
+            setPhotos(savedData.photos || []);
+            setIsAdded(true);
+          }
         }
+
+        // Load watched episodes from AsyncStorage
+        const loadWatchedEpisodes = async () => {
+          try {
+            const watched = await getWatchedEpisodes(
+              firebase_auth.currentUser.uid,
+              showId
+            );
+            setWatchedEpisodes(watched);
+          } catch (error) {
+            console.error(
+              "Failed to load watched episodes from Firebase",
+              error
+            );
+          }
+        };
+
+        loadWatchedEpisodes();
+        loadProviders();
+        loadCast();
+        loadVideos();
+        loadPhotos();
       };
 
-      loadWatchedEpisodes();
-      loadProviders();
-      loadCast();
-      loadVideos();
-      loadPhotos();
-    };
-
-    loadTVSeriesDetails();
-  }, [showId]);
+      loadTVSeriesDetails();
+    }, [showId])
+  );
 
   const handleSaveTVSeries = async () => {
     if (!category) {
@@ -177,7 +172,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
       if (isAdded) {
         await updateShowProgress(userId, showId, "tvSeries", data);
-        Alert.alert(`${tvSeries.name} movie details updated successfully!`);
+        Alert.alert(`${tvSeries.name} series details updated successfully!`);
       } else {
         await saveToWatchList(
           userId,
@@ -188,7 +183,6 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
           userReview
         );
         setIsAdded(true);
-        Alert.alert(`${tvSeries.name} added to watchlist!`);
       }
     } else {
       Alert.alert("Please log in to save TV series.");
@@ -220,14 +214,26 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
           marginBottom: 5,
         }}
       />
-      <Text style={styles.castName}>{item.name}</Text>
-      <Text style={styles.castRole}>
+      <Text
+        style={[
+          styles.castName,
+          { color: colors.text, opacity: colors.opacity },
+        ]}
+      >
+        {item.name}
+      </Text>
+      <Text style={[styles.castRole, { color: colors.gray }]}>
         {item.roles?.[0]?.character || "Unknown Role"}
       </Text>
     </Pressable>
   );
 
   const renderSeasonItem = ({ item }) => {
+    const seasonKey = `Season ${item.season_number}`;
+    const watched = watchedEpisodes[seasonKey]?.length || 0;
+    const total = item.episode_count || 0; // make sure your season data has this
+    const isComplete = watched === total && total > 0;
+
     return (
       <Pressable
         style={styles.seasonItem}
@@ -235,21 +241,48 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
           navigation.navigate("Season", {
             seriesId: showId,
             seasonNumber: item.season_number,
-            watchedEpisodes: watchedEpisodes[item.season_number] || [],
-            updateWatchedEpisodes,
+            watchedEpisodes:
+              watchedEpisodes[`Season ${item.season_number}`] || [],
           })
         }
       >
-        <Image
-          source={{ uri: `https://image.tmdb.org/t/p/w200${item.poster_path}` }}
-          style={{
-            width: seasonPosterWidth,
-            height: seasonPosterHeight,
-            borderRadius: 10,
-            marginRight: 10,
-          }}
-        />
-        <Text style={styles.seasonTitle}>{item.name}</Text>
+        <View>
+          <Image
+            source={{
+              uri: `https://image.tmdb.org/t/p/w200${item.poster_path}`,
+            }}
+            style={{
+              width: seasonPosterWidth,
+              height: seasonPosterHeight,
+              borderRadius: 10,
+              marginRight: 10,
+            }}
+          />
+          {/* Badge */}
+          <View
+            style={{
+              position: "absolute",
+              top: 5,
+              right: 5,
+              backgroundColor: isComplete ? "#4CAF50" : "#FF9800",
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "white", fontSize: 12 }}>
+              {isComplete ? "✓ Done" : `${watched} / ${total}`}
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={[
+            styles.seasonTitle,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
+        >
+          {item.name}
+        </Text>
       </Pressable>
     );
   };
@@ -263,33 +296,22 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
         play={false} // Autoplay disabled
         webViewStyle={styles.videoPlayer}
       />
-      <Text style={styles.videoTitle} numberOfLines={1} ellipsizeMode="tail">
+      <Text
+        style={[
+          styles.videoTitle,
+          { color: colors.text, opacity: colors.opacity },
+        ]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
         {item.name}
       </Text>
     </View>
   );
 
-  // Function to update watched episodes
-  const updateWatchedEpisodes = async (seasonNumber, watchedEps) => {
-    // Update the state
-    setWatchedEpisodes((prev) => ({
-      ...prev,
-      [seasonNumber]: watchedEps,
-    }));
-
-    // Save updated watched episodes in AsyncStorage
-    try {
-      await AsyncStorage.setItem(
-        `watchedEpisodes_${showId}_${seasonNumber}`,
-        JSON.stringify(watchedEps)
-      );
-    } catch (error) {
-      console.error("Failed to save watched episodes to AsyncStorage", error);
-    }
-  };
-
   const watchedSeasons = seasons.filter((season) => {
-    const watchedEpsForSeason = watchedEpisodes[season.season_number] || [];
+    const key = `Season ${season.season_number}`;
+    const watchedEpsForSeason = watchedEpisodes[key] || [];
     return watchedEpsForSeason.length === season.episode_count;
   }).length;
 
@@ -490,8 +512,13 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -504,15 +531,23 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
+              opacity={colors.opacity}
               style={{ marginRight: 25 }}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>TV Series Details</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              TV Series Details
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <ScrollView
           style={styles.scrollView}
           keyboardShouldPersistTaps="handled"
@@ -532,7 +567,14 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               }}
             />
             <View style={styles.textContainer}>
-              <Text style={styles.showTitle}>{tvSeries.name}</Text>
+              <Text
+                style={[
+                  styles.showTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                {tvSeries.name}
+              </Text>
               <View style={styles.ratingContainer}>
                 <Rating
                   maxRating={5}
@@ -541,16 +583,34 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                   size={ratingSize}
                   fillColor="#9575CD"
                   touchColor="#FFFFFF"
-                  baseColor="#9E9E9E"
+                  baseColor={colors.gray}
                 />
-                <Text style={styles.ratingText}>{apiRating} / 5</Text>
+                <Text
+                  style={[
+                    styles.ratingText,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {apiRating} / 5
+                </Text>
               </View>
-              <Text style={styles.genreText}>
+              <Text
+                style={[
+                  styles.genreText,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
                 {genres.map((genre) => genre.name).join(", ") ||
                   "No genres available"}
               </Text>
               <Text
-                style={{ fontSize: 18, fontWeight: "600", marginVertical: 10 }}
+                style={[
+                  styles.providers,
+                  {
+                    color: colors.text,
+                    opacity: colors.opacity,
+                  },
+                ]}
               >
                 Providers
               </Text>
@@ -560,7 +620,12 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                 renderItem={renderProviderItem}
                 keyExtractor={(item) => item.provider_id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     No providers found for this series.
                   </Text>
                 }
@@ -574,7 +639,9 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               onPress={() => setActiveTab("details")}
               style={[
                 styles.tabButton,
-                activeTab === "details" && styles.activeTabButton,
+                activeTab === "details" && {
+                  backgroundColor: colors.secondary,
+                },
                 !isAdded && styles.showAdded,
               ]}
             >
@@ -593,7 +660,9 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                 onPress={() => setActiveTab("review")}
                 style={[
                   styles.tabButton,
-                  activeTab === "review" && styles.activeTabButton,
+                  activeTab === "review" && {
+                    backgroundColor: colors.secondary,
+                  },
                 ]}
               >
                 <Text
@@ -610,28 +679,51 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
           {activeTab === "details" && (
             <>
-              <Text style={styles.label}>Synopsis</Text>
-              <View style={styles.synopsisContainer}>
-                <Text style={styles.synopsis}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Synopsis
+              </Text>
+              <View
+                style={[
+                  styles.synopsisContainer,
+                  { borderColor: colors.text, color: colors.text },
+                ]}
+              >
+                <Text style={[styles.synopsis, { color: colors.text }]}>
                   {expanded
                     ? tvSeries.overview
                     : `${tvSeries.overview.substring(0, 100)}...`}
                 </Text>
                 <Pressable onPress={() => setExpanded(!expanded)}>
-                  <Text style={styles.readMore}>
+                  <Text style={[styles.readMore, { color: colors.secondary }]}>
                     {expanded ? "Read Less" : "Read More..."}
                   </Text>
                 </Pressable>
               </View>
 
               <View style={styles.castContainer}>
-                <Text style={styles.label}>Cast</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  Cast
+                </Text>
                 <Pressable
                   onPress={() =>
                     navigation.navigate("FullCastCrew", { cast, showId })
                   }
                 >
-                  <Text style={styles.nextScreenText}>Show All</Text>
+                  <Text
+                    style={[styles.nextScreenText, { color: colors.secondary }]}
+                  >
+                    Show All
+                  </Text>
                 </Pressable>
               </View>
               <FlatList
@@ -640,55 +732,131 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                 renderItem={renderCastItem}
                 keyExtractor={(item) => item.id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>No cast found.</Text>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No cast found.
+                  </Text>
                 }
                 showsHorizontalScrollIndicator={false}
               />
 
-              <Text style={styles.label}>Seasons</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Seasons
+              </Text>
               <FlatList
                 horizontal
                 data={seasons}
                 renderItem={renderSeasonItem}
                 keyExtractor={(item) => item.id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     No seasons yet in this series.
                   </Text>
                 }
                 showsHorizontalScrollIndicator={false}
               />
-              <Text style={styles.label}>Details</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Details
+              </Text>
               <View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Directed By</Text>
-                  <Text style={styles.detailsText}>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Directed By:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     {tvSeries.created_by[0]?.name}
                   </Text>
                 </View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>First Air Date</Text>
-                  <Text style={styles.detailsText}>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    First Air Date:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     {tvSeries.first_air_date}
                   </Text>
                 </View>
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Last Air Date</Text>
-                  <Text style={styles.detailsText}>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Last Air Date:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     {tvSeries.last_air_date}
                   </Text>
                 </View>
                 {tvSeries.next_episode_to_air ? (
-                  <View style={styles.details}>
-                    <Text style={styles.detailsTitle}>Next Episode to Air</Text>
-                    <Text style={styles.detailsText}>
+                  <View
+                    style={[
+                      styles.details,
+                      { backgroundColor: colors.details },
+                    ]}
+                  >
+                    <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                      Next Episode to Air:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.detailsText,
+                        { color: colors.text, opacity: colors.opacity },
+                      ]}
+                    >
                       {tvSeries.next_episode_to_air.air_date}
                     </Text>
                   </View>
                 ) : null}
-                <View style={styles.details}>
-                  <Text style={styles.detailsTitle}>Status</Text>
-                  <Text style={styles.detailsText}>{tvSeries.status}</Text>
+                <View
+                  style={[styles.details, { backgroundColor: colors.details }]}
+                >
+                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                    Status:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.detailsText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    {tvSeries.status}
+                  </Text>
                 </View>
               </View>
 
@@ -696,7 +864,14 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                 <View style={{ marginBottom: 20 }}>
                   {videos.length === 1 ? (
                     <>
-                      <Text style={styles.label}>Trailer</Text>
+                      <Text
+                        style={[
+                          styles.label,
+                          { color: colors.text, opacity: colors.opacity },
+                        ]}
+                      >
+                        Trailer
+                      </Text>
                       <View style={{ alignItems: "center" }}>
                         <YoutubePlayer
                           width={"100%"}
@@ -706,7 +881,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                           webViewStyle={{ borderRadius: 10 }}
                         />
                         <Text
-                          style={styles.videoTitle}
+                          style={[
+                            styles.videoTitle,
+                            { color: colors.text, opacity: colors.opacity },
+                          ]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
@@ -716,14 +894,28 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                     </>
                   ) : (
                     <>
-                      <Text style={styles.label}>Videos</Text>
+                      <Text
+                        style={[
+                          styles.label,
+                          { color: colors.text, opacity: colors.opacity },
+                        ]}
+                      >
+                        Videos
+                      </Text>
                       <FlatList
                         horizontal
                         data={videos}
                         renderItem={renderVideoItem}
                         keyExtractor={(item) => item.id.toString()}
                         ListEmptyComponent={
-                          <Text style={styles.text}>No videos available.</Text>
+                          <Text
+                            style={[
+                              styles.text,
+                              { color: colors.text, opacity: colors.opacity },
+                            ]}
+                          >
+                            No videos available.
+                          </Text>
                         }
                         showsHorizontalScrollIndicator={false}
                       />
@@ -736,29 +928,96 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
           {activeTab === "review" && isAdded && (
             <>
-              <Text style={styles.label}>Your Progress</Text>
-              <Text style={styles.textProgress}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Your Progress
+              </Text>
+              <Text
+                style={[
+                  styles.textProgress,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
                 Watched Seasons: {watchedSeasons} / {seasons.length}
               </Text>
-              <Text style={styles.textProgress}>
+              <Text
+                style={[
+                  styles.textProgress,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
                 Watched Episodes: {watchedEpisodesCount}
               </Text>
-              <Text style={styles.label}>Your Review</Text>
+              <View
+                style={[
+                  styles.progressBarContainer,
+                  { backgroundColor: colors.itemBorder },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      width: `${
+                        (watchedEpisodesCount / tvSeries.number_of_episodes) *
+                        100
+                      }%`,
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Your Review
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.details,
+                    color: colors.text,
+                    borderColor: colors.gray,
+                  },
+                ]}
                 placeholder="Write your review..."
                 value={userReview}
                 onChangeText={setUserReview}
                 placeholderTextColor={"#000"}
               />
-              <Text style={styles.label}>Images</Text>
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Images
+              </Text>
               <View style={styles.photosHeader}>
-                <Text style={styles.photosCount}>{photos.length} Photos</Text>
+                <Text
+                  style={[
+                    styles.photosCount,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {photos.length} Photos
+                </Text>
                 <View style={styles.photoButtonsContainer}>
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { opacity: pressed ? 0.7 : 1 },
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        backgroundColor: colors.secondary,
+                      },
                     ]}
                     onPress={handleTakePhoto}
                   >
@@ -768,7 +1027,11 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
-                      { opacity: pressed ? 0.7 : 1, marginLeft: 10 },
+                      {
+                        opacity: pressed ? 0.7 : 1,
+                        marginLeft: 10,
+                        backgroundColor: colors.secondary,
+                      },
                     ]}
                     onPress={handleAddFromGallery}
                   >
@@ -779,8 +1042,13 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               </View>
 
               {photoLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#7850bf" />
+                <View
+                  style={[
+                    styles.loadingContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color={colors.primary} />
                   <Text>Saving photo...</Text>
                 </View>
               ) : photos.length > 0 ? (
@@ -793,7 +1061,14 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                   contentContainerStyle={styles.photosList}
                   ListFooterComponent={
                     <Pressable
-                      style={[styles.photoItem, styles.viewAllPhotos]}
+                      style={[
+                        styles.photoItem,
+                        styles.viewAllPhotos,
+                        {
+                          backgroundColor: colors.viewAll,
+                          borderColor: colors.gray,
+                        },
+                      ]}
                       onPress={() =>
                         navigation.navigate("PhotoGallery", {
                           photos,
@@ -812,26 +1087,57 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
                         })
                       }
                     >
-                      <Text style={styles.viewAllText}>View All</Text>
+                      <Text
+                        style={[
+                          styles.viewAllText,
+                          { color: colors.secondary },
+                        ]}
+                      >
+                        View All
+                      </Text>
                     </Pressable>
                   }
                 />
               ) : (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="images-outline" size={50} color="#9E9E9E" />
-                  <Text style={styles.emptyText}>No photos yet</Text>
-                  <Text style={styles.emptySubtext}>
+                <View
+                  style={[
+                    styles.emptyContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <Ionicons
+                    name="images-outline"
+                    size={50}
+                    color={colors.gray}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No photos yet
+                  </Text>
+                  <Text style={[styles.emptySubtext, { color: colors.gray }]}>
                     Capture your movie experience by taking photos
                   </Text>
                 </View>
               )}
               <View style={styles.nextScreenContainer}>
-                <Text style={styles.label}>Maps</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  Maps
+                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     styles.mapButton,
                     {
                       opacity: pressed ? 0.5 : 1,
+                      backgroundColor: colors.secondary,
                     },
                   ]}
                   onPress={() =>
@@ -844,22 +1150,70 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               </View>
 
               {location ? (
-                <View style={styles.locationContainer}>
-                  <Text style={styles.locationTitle}>📍 Saved Location:</Text>
-                  <Text style={styles.locationText}>Name: {location.name}</Text>
-                  <Text style={styles.locationText}>
+                <View
+                  style={[
+                    styles.locationContainer,
+                    {
+                      backgroundColor: colors.details,
+                      shadowColor: colors.text,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.locationTitle,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    📍 Saved Location:
+                  </Text>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    Name: {location.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     Address: {location.address}
                   </Text>
-                  <Text style={styles.locationText}>
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     Date Added:{" "}
                     {location.dateAdded?.toDate().toLocaleDateString()}
                   </Text>
                 </View>
               ) : (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="location-outline" size={50} color="#9E9E9E" />
-                  <Text style={styles.emptyText}>No saved location</Text>
-                  <Text style={styles.emptySubtext}>
+                <View
+                  style={[
+                    styles.emptyContainer,
+                    { backgroundColor: colors.details },
+                  ]}
+                >
+                  <Ionicons
+                    name="location-outline"
+                    size={50}
+                    color={colors.gray}
+                  />
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
+                    No saved location
+                  </Text>
+                  <Text style={[styles.emptySubtext, { color: colors.gray }]}>
                     Open Maps to add your location where you watched your show.
                   </Text>
                 </View>
@@ -870,7 +1224,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
         <View
           style={{
-            borderBottomColor: "black",
+            borderBottomColor: colors.text,
             borderBottomWidth: StyleSheet.hairlineWidth,
             marginBottom: -10,
           }}
@@ -881,6 +1235,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.button,
             ]}
@@ -894,6 +1249,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               style={({ pressed }) => [
                 {
                   opacity: pressed ? 0.5 : 1,
+                  backgroundColor: colors.button,
                 },
                 styles.button,
               ]}
@@ -905,6 +1261,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
               style={({ pressed }) => [
                 {
                   opacity: pressed ? 0.5 : 1,
+                  backgroundColor: colors.button,
                 },
                 styles.starButton,
               ]}
@@ -936,22 +1293,15 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#000",
-  },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   scrollView: {
     flex: 1,
@@ -974,7 +1324,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -990,26 +1339,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 5,
     fontWeight: "bold",
-    color: "#000",
   },
   synopsis: {
     fontSize: 15,
-    color: "#000",
   },
   readMore: {
-    color: "#3F51B5",
     marginTop: 5,
   },
   input: {
-    backgroundColor: "#F7F7F7",
     padding: 10,
     borderRadius: 8,
     marginTop: 5,
-    borderColor: "#9E9E9E",
     borderWidth: 1,
   },
   button: {
-    backgroundColor: "#7850bf",
     paddingVertical: 12,
     paddingHorizontal: 100,
     borderRadius: 15,
@@ -1019,7 +1362,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   starButton: {
-    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 15,
     alignItems: "center",
@@ -1043,7 +1385,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     marginVertical: 10,
-    color: "#000",
   },
   ratingText: {
     fontSize: 16,
@@ -1069,9 +1410,7 @@ const styles = StyleSheet.create({
   synopsisContainer: {
     borderWidth: 1,
     borderRadius: 10,
-    backgroundColor: "#fff",
     padding: 10,
-    color: "#9E9E9E",
   },
   providerItem: {
     flex: 1,
@@ -1086,7 +1425,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
-    color: "#000",
     marginBottom: 2,
     width: "100%",
     numberOfLines: 1,
@@ -1094,7 +1432,6 @@ const styles = StyleSheet.create({
   },
   castRole: {
     fontSize: 12,
-    color: "#9E9E9E",
     textAlign: "center",
     width: "100%",
     numberOfLines: 1,
@@ -1122,9 +1459,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  activeTabButton: {
-    backgroundColor: "#3F51B5",
-  },
   tabText: {
     fontSize: 18,
     color: "#FFFFFF",
@@ -1147,17 +1481,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginTop: 5,
-    color: "#000000",
   },
   genreText: {
     marginTop: 5,
     fontSize: 15,
-    color: "#000000",
+  },
+  providers: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 10,
   },
   text: {
     margin: 5,
     fontSize: 15,
-    color: "#000000",
   },
   textProgress: {
     marginBottom: 10,
@@ -1170,14 +1506,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 5,
-    backgroundColor: "#f7f7f7",
   },
   detailsTitle: {
-    color: "#9E9E9E",
     fontSize: 18,
   },
   detailsText: {
-    color: "#000",
     fontSize: 18,
   },
   videoContainer: {
@@ -1188,7 +1521,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 10,
     alignSelf: "center",
-    color: "#000000",
     textAlign: "center",
     flexWrap: "wrap",
     width: 340,
@@ -1212,8 +1544,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 15,
     borderRadius: 8,
-    backgroundColor: "#f7f7f7",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -1222,22 +1552,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
-    color: "#000000",
   },
   locationText: {
     fontSize: 16,
-    color: "#000000",
     marginBottom: 5,
   },
   noLocationText: {
     fontSize: 16,
-    color: "#9E9E9E",
     textAlign: "center",
     marginBottom: 20,
   },
   mapButton: {
     flexDirection: "row",
-    backgroundColor: "#3F51B5",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -1257,7 +1583,6 @@ const styles = StyleSheet.create({
   },
   photosCount: {
     fontSize: 16,
-    color: "#000000",
   },
   photoButtonsContainer: {
     flexDirection: "row",
@@ -1301,31 +1626,25 @@ const styles = StyleSheet.create({
   viewAllPhotos: {
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f8f8",
     borderWidth: 1,
-    borderColor: "#9E9E9E",
   },
   viewAllText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#3F51B5",
   },
   emptyContainer: {
     padding: 20,
     alignItems: "center",
-    backgroundColor: "#f7f7f7",
     borderRadius: 8,
     marginBottom: 20,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#000000",
     marginTop: 10,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#9E9E9E",
     textAlign: "center",
     marginTop: 5,
   },
@@ -1333,9 +1652,17 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f7f7f7",
     borderRadius: 8,
     marginBottom: 20,
+  },
+  progressBarContainer: {
+    height: 10,
+    borderRadius: 5,
+    overflow: "hidden",
+    marginVertical: 10,
+  },
+  progressBar: {
+    height: "100%",
   },
 });
 

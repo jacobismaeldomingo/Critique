@@ -317,3 +317,39 @@ export const fetchTVSeriesVideos = async (seriesId) => {
     return [];
   }
 };
+
+export async function checkForNewReleases(mediaItem) {
+  try {
+    if (mediaItem.type === "tv") {
+      // Get latest season data
+      const response = await fetch(
+        `https://api.themoviedb.org/3/tv/${mediaItem.id}?api_key=${API_KEY}`
+      );
+      const data = await response.json();
+
+      // Get the latest season
+      const latestSeason = data.seasons[data.seasons.length - 1];
+
+      return {
+        season: latestSeason.season_number,
+        episode: latestSeason.episode_count,
+        lastAirDate: latestSeason.air_date,
+      };
+    } else {
+      // For movies - get release dates
+      const response = await fetch(
+        `https://api.themoviedb.org/3/movie/${mediaItem.id}/release_dates?api_key=${API_KEY}`
+      );
+      const data = await response.json();
+
+      // Find theatrical release
+      const theaterRelease = data.results.find((r) => r.type === 3);
+      return {
+        theaterRelease: theaterRelease?.release_dates[0]?.release_date || null,
+      };
+    }
+  } catch (error) {
+    console.error("TMDB API error:", error);
+    throw error;
+  }
+}

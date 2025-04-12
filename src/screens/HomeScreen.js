@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,8 @@ import { firebase_auth } from "../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
 import placeholderPoster from "../../assets/no-poster-available.png";
+import { ThemeContext } from "../components/ThemeContext";
+import { getTheme } from "../components/theme";
 
 const HomeScreen = ({ navigation }) => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -41,6 +43,9 @@ const HomeScreen = ({ navigation }) => {
   const posterHeight = posterWidth * 1.5; // Maintain aspect ratio
   const movieItemWitdh = width * 0.8; // 80% of screen width
   const movieItemHeight = movieItemWitdh * (9 / 16); // Maintain aspect ratio (16:9)
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     const user = firebase_auth.currentUser;
@@ -94,17 +99,13 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleShowDetails = async (item) => {
-    if (item.media_type === "movies") {
-      navigation.navigate("MovieDetails", {
+    navigation.navigate(
+      item.media_type === "movies" ? "MovieDetails" : "TVSeriesDetails",
+      {
         showId: item.id,
-        type: "movies",
-      });
-    } else {
-      navigation.navigate("TVSeriesDetails", {
-        showId: item.id,
-        type: "tvSeries",
-      });
-    }
+        type: item.media_type,
+      }
+    );
   };
 
   const renderShowItem = ({ item }) => (
@@ -140,7 +141,14 @@ const HomeScreen = ({ navigation }) => {
           borderRadius: 10,
         }}
       />
-      <Text style={styles.movieTitle}>{item.title}</Text>
+      <Text
+        style={[
+          styles.movieTitle,
+          { color: colors.text, opacity: colors.opacity },
+        ]}
+      >
+        {item.title}
+      </Text>
     </Pressable>
   );
 
@@ -162,11 +170,16 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
       <ScrollView
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
       >
         <View style={styles.headerContainer}>
           <Pressable
@@ -177,9 +190,16 @@ const HomeScreen = ({ navigation }) => {
             ]}
             onPress={() => navigation.navigate("Settings")}
           >
-            <Ionicons name="menu" size={28} color="#3F51B5" />
+            <Ionicons name="menu" size={28} color={colors.secondary} />
           </Pressable>
-          <Text style={styles.header}>Home</Text>
+          <Text
+            style={[
+              styles.header,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Home
+          </Text>
           <Pressable
             style={({ pressed }) => [
               {
@@ -188,11 +208,13 @@ const HomeScreen = ({ navigation }) => {
             ]}
             onPress={() => setIsSearchVisible(true)}
           >
-            <Ionicons name="search" size={26} color="#3F51B5" />
+            <Ionicons name="search" size={26} color={colors.secondary} />
           </Pressable>
         </View>
-        <View style={styles.divider} />
-        <Text style={styles.title}>Welcome to Critique!</Text>
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
+        <Text style={[styles.title, { color: colors.primary }]}>
+          Welcome to Critique!
+        </Text>
 
         {/* {!isEmailVerified && (
           <View style={styles.banner}>
@@ -214,16 +236,28 @@ const HomeScreen = ({ navigation }) => {
             showsHorizontalScrollIndicator={false}
           />
         </View>
-        <View style={{ paddingBottom: 100 }}>
+        <View style={{ paddingBottom: 50 }}>
           <View style={styles.sectionContainer}>
             <View style={styles.titleContainer}>
-              <Text style={styles.sectionTitle}>Now Playing</Text>
-              <Ionicons name="play-circle-outline" size={24} color="black" />
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Now Playing
+              </Text>
+              <Ionicons
+                name="play-circle-outline"
+                size={24}
+                color={colors.icon}
+                opacity={colors.opacity}
+              />
             </View>
             <Pressable
               style={({ pressed }) => [
                 {
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? 0.5 : colors.opacity,
                   marginRight: 5,
                 },
               ]}
@@ -234,7 +268,7 @@ const HomeScreen = ({ navigation }) => {
               <Ionicons
                 name="chevron-forward-outline"
                 size={24}
-                color="black"
+                color={colors.icon}
               />
             </Pressable>
           </View>
@@ -248,13 +282,25 @@ const HomeScreen = ({ navigation }) => {
 
           <View style={[styles.sectionContainer, { marginTop: 5 }]}>
             <View style={styles.titleContainer}>
-              <Text style={styles.sectionTitle}>Trending Movies</Text>
-              <Ionicons name="trending-up-outline" size={24} color="black" />
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Trending Movies
+              </Text>
+              <Ionicons
+                name="trending-up-outline"
+                size={24}
+                color={colors.icon}
+                opacity={colors.opacity}
+              />
             </View>
             <Pressable
               style={({ pressed }) => [
                 {
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? 0.5 : colors.opacity,
                   marginRight: 5,
                 },
               ]}
@@ -265,7 +311,7 @@ const HomeScreen = ({ navigation }) => {
               <Ionicons
                 name="chevron-forward-outline"
                 size={24}
-                color="black"
+                color={colors.icon}
               />
             </Pressable>
           </View>
@@ -279,13 +325,25 @@ const HomeScreen = ({ navigation }) => {
 
           <View style={[styles.sectionContainer, { marginTop: 15 }]}>
             <View style={styles.titleContainer}>
-              <Text style={styles.sectionTitle}>Trending TV Series</Text>
-              <Ionicons name="trending-up-outline" size={24} color="black" />
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Trending TV Series
+              </Text>
+              <Ionicons
+                name="trending-up-outline"
+                size={24}
+                color={colors.icon}
+                opacity={colors.opacity}
+              />
             </View>
             <Pressable
               style={({ pressed }) => [
                 {
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? 0.5 : colors.opacity,
                   marginRight: 5,
                 },
               ]}
@@ -296,7 +354,7 @@ const HomeScreen = ({ navigation }) => {
               <Ionicons
                 name="chevron-forward-outline"
                 size={24}
-                color="black"
+                color={colors.icon}
               />
             </Pressable>
           </View>
@@ -310,13 +368,25 @@ const HomeScreen = ({ navigation }) => {
 
           <View style={[styles.sectionContainer, { marginTop: 15 }]}>
             <View style={styles.titleContainer}>
-              <Text style={styles.sectionTitle}>Popular Movies</Text>
-              <Ionicons name="heart" size={22} color="black" />
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Popular Movies
+              </Text>
+              <Ionicons
+                name="heart"
+                size={22}
+                color={colors.icon}
+                opacity={colors.opacity}
+              />
             </View>
             <Pressable
               style={({ pressed }) => [
                 {
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? 0.5 : colors.opacity,
                   marginRight: 5,
                 },
               ]}
@@ -327,13 +397,13 @@ const HomeScreen = ({ navigation }) => {
               <Ionicons
                 name="chevron-forward-outline"
                 size={24}
-                color="black"
+                color={colors.icon}
               />
             </Pressable>
           </View>
           <FlatList
             horizontal
-            data={popularTVSeries}
+            data={popularMovies}
             renderItem={renderShowItem}
             keyExtractor={(item) => item.id.toString()}
             showsHorizontalScrollIndicator={false}
@@ -341,13 +411,25 @@ const HomeScreen = ({ navigation }) => {
 
           <View style={[styles.sectionContainer, { marginTop: 15 }]}>
             <View style={styles.titleContainer}>
-              <Text style={styles.sectionTitle}>Popular TV Series</Text>
-              <Ionicons name="heart" size={22} color="black" />
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                Popular TV Series
+              </Text>
+              <Ionicons
+                name="heart"
+                size={22}
+                color={colors.icon}
+                opacity={colors.opacity}
+              />
             </View>
             <Pressable
               style={({ pressed }) => [
                 {
-                  opacity: pressed ? 0.5 : 1,
+                  opacity: pressed ? 0.5 : colors.opacity,
                   marginRight: 5,
                 },
               ]}
@@ -358,13 +440,13 @@ const HomeScreen = ({ navigation }) => {
               <Ionicons
                 name="chevron-forward-outline"
                 size={24}
-                color="black"
+                color={colors.icon}
               />
             </Pressable>
           </View>
           <FlatList
             horizontal
-            data={popularMovies}
+            data={popularTVSeries}
             renderItem={renderShowItem}
             keyExtractor={(item) => item.id.toString()}
             showsHorizontalScrollIndicator={false}
@@ -383,12 +465,10 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -403,7 +483,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -412,6 +491,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     textAlign: "center",
     fontWeight: "bold",
+    opacity: 0.87,
   },
   banner: {
     backgroundColor: "#ffeb3b",

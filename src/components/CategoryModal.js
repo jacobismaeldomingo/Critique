@@ -1,12 +1,17 @@
 // components/CategoryModal.js
-import React from "react";
+import React, { useContext } from "react";
 import { Modal, View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { saveToWatchList } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
+import { ThemeContext } from "./ThemeContext";
+import { getTheme } from "./theme";
 
 const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
   const navigation = useNavigation();
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const handleSelectCategory = async (category) => {
     if (firebase_auth.currentUser) {
@@ -32,18 +37,41 @@ const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.title}>
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
             Please select Watchlist Category before adding the show
           </Text>
           <View>
             {["Watched", "In Progress", "Plan to Watch"].map((category) => (
               <Pressable
                 key={category}
-                style={[styles.categoryButton]}
+                style={({ pressed }) => [
+                  {
+                    opacity: pressed ? 0.5 : 1,
+                    borderColor: colors.grey,
+                  },
+                  styles.categoryButton,
+                ]}
                 onPress={() => handleSelectCategory(category)}
               >
-                <Text style={styles.categoryText}>{category}</Text>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {category}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -51,6 +79,7 @@ const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.closeButton,
             ]}
@@ -92,21 +121,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderWidth: 1,
     borderRadius: 5,
-    borderColor: "gray",
     margin: 5,
-  },
-  selectedCategoryButton: {
-    backgroundColor: "blue",
   },
   categoryText: {
     fontSize: 16,
   },
-  selectedCategoryText: {
-    color: "white",
-  },
   closeButton: {
     marginTop: 16,
-    backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",

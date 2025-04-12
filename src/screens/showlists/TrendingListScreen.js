@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import {
   fetchTrendingTVSeries,
 } from "../../services/tmdb";
 import { useNavigation } from "@react-navigation/native";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const TrendingListScreen = ({ route }) => {
   const { type } = route.params;
@@ -28,9 +30,11 @@ const TrendingListScreen = ({ route }) => {
 
   const backdropWidth = width * 0.9; // 90% of screen width
   const backdropHeight = backdropWidth * (10 / 19); // Maintain aspect ratio (similar to 380x200)
-
   const posterWidth = backdropWidth * 0.26; // 26% of backdrop width
   const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 100x150)
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   // Fetch movies or TV shows based on type (supports pagination)
   const loadShows = async () => {
@@ -112,8 +116,13 @@ const TrendingListScreen = ({ route }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -123,15 +132,25 @@ const TrendingListScreen = ({ route }) => {
             ]}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
               Trending {type === "movies" ? "Movies" : "TV Series"}
             </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <FlatList
           data={shows}
           renderItem={renderShowItem}
@@ -139,7 +158,9 @@ const TrendingListScreen = ({ route }) => {
           onEndReached={loadShows} // Load next page when scrolling down
           onEndReachedThreshold={0.5} // Load when 50% from the bottom
           ListFooterComponent={
-            loading ? <ActivityIndicator size="large" color="black" /> : null
+            loading ? (
+              <ActivityIndicator size="large" color={colors.secondary} />
+            ) : null
           }
         />
       </View>

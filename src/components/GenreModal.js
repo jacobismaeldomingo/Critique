@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,13 @@ import {
 import { firebase_auth, db } from "../../firebaseConfig.js";
 import { doc, setDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ThemeContext } from "../components/ThemeContext";
+import { getTheme } from "../components/theme";
 
-const GenreModal = ({ isVisible, onClose }) => {
+const GenreModal = ({ isVisible, onClose, onSave }) => {
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     const loadGenres = async () => {
@@ -38,18 +42,28 @@ const GenreModal = ({ isVisible, onClose }) => {
     const user = firebase_auth.currentUser;
     if (!user) return;
 
-    await setDoc(
-      doc(db, "users", user.uid),
-      { preferredGenres: selectedGenres },
-      { merge: true }
-    );
+    try {
+      await setDoc(
+        doc(db, "users", user.uid),
+        { preferredGenres: selectedGenres },
+        { merge: true }
+      );
 
-    await AsyncStorage.setItem(
-      "preferredGenres",
-      JSON.stringify(selectedGenres)
-    );
-    Alert.alert("Your preferences are saved!");
-    onClose();
+      await AsyncStorage.setItem(
+        "preferredGenres",
+        JSON.stringify(selectedGenres)
+      );
+
+      if (onSave) {
+        onSave(selectedGenres); // Notify parent of the update
+      }
+
+      Alert.alert("Your preferences are saved!");
+      onClose();
+    } catch (error) {
+      console.error("Error saving genres:", error);
+      Alert.alert("Error", "Failed to save preferences");
+    }
   };
 
   const renderGenreOption = ({ item }) => (
@@ -59,7 +73,7 @@ const GenreModal = ({ isVisible, onClose }) => {
         {
           backgroundColor: selectedGenres.includes(item.id)
             ? item.color
-            : "#9E9E9E",
+            : colors.gray,
         },
       ]}
       onPress={() => toggleGenreSelection(item.id)}
@@ -76,8 +90,20 @@ const GenreModal = ({ isVisible, onClose }) => {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.sectionTitle}>Select Your Favorite Genres:</Text>
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Select Your Favorite Genres:
+          </Text>
           <FlatList
             numColumns={3}
             data={genres}
@@ -89,6 +115,7 @@ const GenreModal = ({ isVisible, onClose }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.button,
             ]}
@@ -100,6 +127,7 @@ const GenreModal = ({ isVisible, onClose }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.button,
             ]}
@@ -123,7 +151,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: "90%",
     maxHeight: "70%",
-    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -152,7 +179,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#3F51B5",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

@@ -1,5 +1,5 @@
 // screens/LoginScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TextInput,
@@ -22,59 +22,11 @@ import {
   setDoc,
   doc,
 } from "firebase/firestore";
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "react-native-vector-icons";
-
-// Configure Google Sign-In
-GoogleSignin.configure({
-  webClientId:
-    "542453473907-ic8dh5ffa6gf17q5a0e9u0p49fc2dnvn.apps.googleusercontent.com", // From Firebase Console
-  iosClientId:
-    "542453473907-5tlr2aif8kopft2q0bn11p4be0ile9u8.apps.googleusercontent.com", // From GoogleService-Info.plist
-});
-
-const handleGoogleSignIn = async () => {
-  try {
-    console.log("Trying Google Sign in ...");
-
-    const userInfo = await GoogleSignin.signIn();
-
-    const { idToken } = userInfo.data;
-    if (!idToken) throw new Error("No ID Token received from Google");
-
-    // Create a Firebase credential with the Google ID token
-    const googleCredential = GoogleAuthProvider.credential(idToken);
-
-    // Sign in with the credential
-    const userCredential = await signInWithCredential(
-      firebase_auth,
-      googleCredential
-    );
-
-    // Save user profile in Firestore
-    await setDoc(doc(db, "users", userCredential.user.uid), {
-      uid: userCredential.user.uid,
-      email: userCredential.user.email,
-      username: userCredential.user.displayName, // Use Google's given name as the username
-      phoneNumber: userCredential.user.phoneNumber,
-      provider: "google",
-    });
-
-    console.log("Login successfully!");
-  } catch (error) {
-    if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-      Alert.alert("Signing in cancelled");
-    } else if (error.code === statusCodes.IN_PROGRESS) {
-      Alert.alert("Signing in, in progress");
-    } else {
-      Alert.alert("Error", error.message);
-    }
-  }
-};
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 const LoginScreen = ({ navigation }) => {
   const [emailOrUsername, setEmailOrUsername] = useState("");
@@ -83,6 +35,9 @@ const LoginScreen = ({ navigation }) => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -165,7 +120,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.imageContainer}>
         <Image
           style={styles.logo}
@@ -173,46 +128,74 @@ const LoginScreen = ({ navigation }) => {
         />
       </View>
 
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.text}>Email or Username:</Text>
+      <Text
+        style={[styles.title, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Login
+      </Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Email or Username:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          emailError ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          emailError ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Enter your email or username"
           value={emailOrUsername}
           onChangeText={setEmailOrUsername}
-          placeholderTextColor={"#9E9E9E"}
+          placeholderTextColor={colors.gray}
         />
         {emailOrUsername.length > 0 && (
           <Pressable onPress={clearEmailOrUsername}>
-            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
+            <Ionicons name="close-circle" size={20} color={colors.close} />
           </Pressable>
         )}
         {emailError && emailOrUsername.length === 0 ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+      {emailError ? (
+        <Text style={[styles.errorText, { color: colors.error }]}>
+          {emailError}
+        </Text>
+      ) : null}
 
-      <Text style={styles.text}>Password:</Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Password:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          passwordError ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          passwordError ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Enter your password"
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
-          placeholderTextColor={"#9E9E9E"}
+          placeholderTextColor={colors.gray}
           onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
           onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
         />
@@ -221,16 +204,22 @@ const LoginScreen = ({ navigation }) => {
             <Ionicons
               name={showPassword ? "eye-off" : "eye"}
               size={20}
-              color="#9E9E9E"
+              color={colors.close}
             />
           </Pressable>
         )}
         {passwordError && !showPasswordValidation ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
       {passwordError ? (
-        <Text style={styles.errorText}>{passwordError}</Text>
+        <Text style={[styles.errorText, { color: colors.error }]}>
+          {passwordError}
+        </Text>
       ) : null}
 
       <Pressable
@@ -242,13 +231,16 @@ const LoginScreen = ({ navigation }) => {
         ]}
         onPress={() => navigation.navigate("ForgotPassword")}
       >
-        <Text style={{ color: "#3F51B5", fontSize: 16 }}>Forgot password?</Text>
+        <Text style={{ color: colors.secondary, fontSize: 16 }}>
+          Forgot password?
+        </Text>
       </Pressable>
 
       <Pressable
         style={({ pressed }) => [
           {
             opacity: pressed ? 0.5 : 1,
+            backgroundColor: colors.button,
           },
           styles.button,
         ]}
@@ -265,31 +257,28 @@ const LoginScreen = ({ navigation }) => {
         ]}
         onPress={() => navigation.navigate("Signup")}
       >
-        <Text style={styles.signUpText}>
+        <Text style={[styles.signUpText, { color: colors.secondary }]}>
           Don't have an account yet? Sign up here!
         </Text>
       </Pressable>
       <View style={styles.itemBorderContainer}>
-        <View style={styles.itemBorder} />
-        <Text style={[styles.text, { marginHorizontal: 10 }]}>or</Text>
-        <View style={styles.itemBorder} />
+        <View style={[styles.itemBorder, { borderBottomColor: colors.gray }]} />
+        <Text
+          style={[
+            styles.text,
+            {
+              marginHorizontal: 10,
+              color: colors.text,
+              opacity: colors.opacity,
+            },
+          ]}
+        >
+          or
+        </Text>
+        <View style={[styles.itemBorder, { borderBottomColor: colors.gray }]} />
       </View>
 
-      <Pressable
-        style={({ pressed }) => [
-          {
-            opacity: pressed ? 0.5 : 1,
-          },
-          styles.googleButton,
-        ]}
-        onPress={handleGoogleSignIn}
-      >
-        <Image
-          source={require("../../../assets/google-logo.png")}
-          style={{ width: 25, height: 25 }}
-        />
-        <Text style={styles.goggleButtonText}>Sign in with Google</Text>
-      </Pressable>
+      {/* <GoogleSignInButton colors={colors} /> */}
     </View>
   );
 };
@@ -318,26 +307,20 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
-  },
-  inputContainerError: {
-    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#9575CD",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -348,7 +331,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   googleButton: {
-    backgroundColor: "#f2f2f2",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
@@ -366,7 +348,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemBorder: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: 1,
     width: "45%",
     marginBottom: 8,

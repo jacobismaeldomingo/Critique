@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 import placeholderPicture from "../../../assets/placeholder_profile.png";
 import { Ionicons } from "react-native-vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const FullCastCrewScreen = ({ route }) => {
   const { cast } = route.params;
@@ -20,9 +22,11 @@ const FullCastCrewScreen = ({ route }) => {
 
   // Get device width
   const { width } = Dimensions.get("window");
-
   // Set responsive width and height for the cast image
   const castImageSize = width * 0.15;
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   // Function to group members by their roles
   const groupByDepartment = (data) => {
@@ -74,8 +78,20 @@ const FullCastCrewScreen = ({ route }) => {
         }}
       />
       <View>
-        <Text style={styles.castName}>{item.name}</Text>
-        <Text style={styles.castRole}>
+        <Text
+          style={[
+            styles.castName,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
+        >
+          {item.name}
+        </Text>
+        <Text
+          style={[
+            styles.castRole,
+            { color: colors.subtitle, opacity: colors.opacity },
+          ]}
+        >
           {item.roles?.[0]?.character || "Unknown Role"}
         </Text>
       </View>
@@ -84,8 +100,13 @@ const FullCastCrewScreen = ({ route }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -95,30 +116,61 @@ const FullCastCrewScreen = ({ route }) => {
             ]}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Full Cast & Crew List</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Full Cast & Crew List
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <TextInput
-          style={styles.searchInput}
+          style={[
+            styles.searchInput,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Search cast or crew..."
           value={searchQuery}
           onChangeText={setSearchQuery}
+          placeholderTextColor={colors.gray}
         />
         <SectionList
           sections={filterData(sections)}
           keyExtractor={(item) => item.id.toString()}
           renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              {title}
+            </Text>
           )}
           renderItem={renderCastItem}
           ListEmptyComponent={
-            <Text style={styles.noResults}>No results found.</Text>
+            <Text
+              style={[
+                styles.noResults,
+                { color: colors.subtitle, opacity: colors.opacity },
+              ]}
+            >
+              No results found.
+            </Text>
           }
           stickySectionHeadersEnabled={false}
+          indicatorStyle={colors.bar} // only works in IOS
         />
       </View>
     </>
@@ -128,12 +180,10 @@ const FullCastCrewScreen = ({ route }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -152,14 +202,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
   searchInput: {
     padding: 10,
     borderWidth: 1,
-    borderColor: "#9E9E9E",
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -168,7 +216,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
     marginTop: 15,
-    color: "#000",
     paddingLeft: 5,
   },
   castItem: {
@@ -183,11 +230,9 @@ const styles = StyleSheet.create({
   },
   castRole: {
     fontSize: 16,
-    color: "#666",
   },
   noResults: {
     textAlign: "center",
-    color: "#666",
     marginTop: 20,
   },
 });

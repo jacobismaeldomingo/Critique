@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Image,
-} from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { fetchSeason } from "../../services/tmdb";
 import { Ionicons } from "react-native-vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoadingItem from "../../components/LoadingItem";
+import { firebase_auth } from "../../../firebaseConfig";
+import {
+  getWatchedEpisodes,
+  saveWatchedEpisodes,
+} from "../../services/firestore";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const SeasonScreen = ({ route, navigation }) => {
-  const { seriesId, seasonNumber, watchedEpisodes, updateWatchedEpisodes } =
-    route.params;
+  const { seriesId, seasonNumber, watchedEpisodes } = route.params;
   const [season, setSeason] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [watched, setWatched] = useState(new Set(watchedEpisodes || []));
   const [expandedSeason, setExpandedSeason] = useState(false);
   const [expandedEpisodes, setExpandedEpisodes] = useState(false);
 
-  // Load episodes from AsyncStorage when the component mounts
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
+
   useEffect(() => {
     const loadSeason = async () => {
       const seasonDetails = await fetchSeason(seriesId, seasonNumber);
@@ -32,17 +32,13 @@ const SeasonScreen = ({ route, navigation }) => {
 
     const loadWatchedEpisodes = async () => {
       try {
-        const savedWatchedEpisodes = await AsyncStorage.getItem(
-          `watchedEpisodes_${seriesId}_${seasonNumber}`
-        );
-        if (savedWatchedEpisodes) {
-          setWatched(new Set(JSON.parse(savedWatchedEpisodes)));
+        const userId = firebase_auth.currentUser.uid;
+        const savedWatchedEpisodes = await getWatchedEpisodes(userId, seriesId);
+        if (savedWatchedEpisodes[`Season ${seasonNumber}`]) {
+          setWatched(new Set(savedWatchedEpisodes[`Season ${seasonNumber}`]));
         }
       } catch (error) {
-        console.error(
-          "Failed to load watched episodes from AsyncStorage",
-          error
-        );
+        console.error("Failed to load watched episodes from Firestore", error);
       }
     };
 
@@ -50,23 +46,22 @@ const SeasonScreen = ({ route, navigation }) => {
     loadWatchedEpisodes();
   }, [seriesId, seasonNumber]);
 
-  // Update watched episodes in AsyncStorage when they change
+  // Save watched episodes to Firestore when the watched state changes
   useEffect(() => {
-    const saveWatchedEpisodes = async () => {
+    const saveEpisodesToFirestore = async () => {
       try {
-        await AsyncStorage.setItem(
-          `watchedEpisodes_${seriesId}_${seasonNumber}`,
-          JSON.stringify(Array.from(watched))
-        );
+        const userId = firebase_auth.currentUser.uid;
+        const watchedArray = Array.from(watched);
+        await saveWatchedEpisodes(userId, seriesId, seasonNumber, watchedArray);
       } catch (error) {
-        console.error("Failed to save watched episodes to AsyncStorage", error);
+        console.error("Failed to save watched episodes to Firestore", error);
       }
     };
 
-    saveWatchedEpisodes();
+    saveEpisodesToFirestore();
   }, [watched, seriesId, seasonNumber]);
 
-  // Toggle watched status for a single episode
+  // Function to toggle the watched state for a single episode
   const toggleWatched = (episodeNumber) => {
     const updatedWatched = new Set(watched);
     if (updatedWatched.has(episodeNumber)) {
@@ -74,22 +69,16 @@ const SeasonScreen = ({ route, navigation }) => {
     } else {
       updatedWatched.add(episodeNumber);
     }
-    setWatched(updatedWatched);
-    updateWatchedEpisodes(seasonNumber, Array.from(updatedWatched));
+    setWatched(updatedWatched); // Only triggers the save when `watched` changes
   };
 
   // Toggle watched status for all episodes in the season
   const toggleSeasonWatched = () => {
-    if (watched.size === episodes.length) {
-      // If all episodes are already watched, mark all as unwatched
-      setWatched(new Set());
-      updateWatchedEpisodes(seasonNumber, []);
-    } else {
-      // Mark all episodes as watched
-      const allEpisodes = episodes.map((ep) => ep.episode_number);
-      setWatched(new Set(allEpisodes));
-      updateWatchedEpisodes(seasonNumber, allEpisodes);
-    }
+    const updatedWatched =
+      watched.size === episodes.length
+        ? new Set()
+        : new Set(episodes.map((ep) => ep.episode_number));
+    setWatched(updatedWatched);
   };
 
   // Toggle expanded state for a specific episode
@@ -106,8 +95,13 @@ const SeasonScreen = ({ route, navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -117,57 +111,119 @@ const SeasonScreen = ({ route, navigation }) => {
             ]}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Season Episode Details</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Season Episode Details
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <View style={{ marginBottom: 10 }}>
           <View style={styles.seasonCheckboxContainer}>
-            <Text style={styles.title}>Season {seasonNumber}</Text>
+            <Text
+              style={[
+                styles.title,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Season {seasonNumber}
+            </Text>
             <BouncyCheckbox
               isChecked={watched.size === episodes.length}
               onPress={toggleSeasonWatched}
-              fillColor="#7850bf"
-              unfillColor="white"
+              fillColor={colors.primary}
+              unfillColor={colors.input}
               innerIconStyle={{ borderRadius: 50 }}
               iconStyle={{ borderRadius: 50 }}
               style={{ marginRight: -5, marginBottom: 10 }}
             />
           </View>
           <View style={styles.episodeDetails}>
-            <Text style={styles.detailText}>
+            <Text
+              style={[
+                styles.detailText,
+                { color: colors.grey, opacity: colors.opacity },
+              ]}
+            >
               Average Rating: {season.vote_average} / 10
             </Text>
           </View>
-          <View style={styles.synopsisContainer}>
-            <Text style={styles.synopsis}>
+          <View
+            style={[
+              styles.synopsisContainer,
+              { borderColor: colors.text, color: colors.text },
+            ]}
+          >
+            <Text
+              style={[
+                styles.synopsis,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
               {expandedSeason
                 ? season.overview
                 : `${season.overview?.substring(0, 100)}...`}
             </Text>
             <Pressable onPress={() => setExpandedSeason(!expandedSeason)}>
-              <Text style={styles.readMore}>
+              <Text style={[styles.readMore, { color: colors.secondary }]}>
                 {expandedSeason ? "Read Less" : "Read More..."}
               </Text>
             </Pressable>
           </View>
         </View>
-        <Text style={styles.title}>Episodes:</Text>
+        <Text
+          style={[
+            styles.title,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
+        >
+          Episodes:
+        </Text>
         <FlatList
           data={episodes}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.episodeContainer}>
-              <View style={styles.titleContainer}>
-                <Text style={styles.episodeTitle}>{item.name}</Text>
+            <View
+              style={[
+                styles.episodeContainer,
+                {
+                  backgroundColor: watched.has(item.episode_number)
+                    ? colors.episode
+                    : colors.details,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.titleContainer,
+                  { backgroundColor: colors.detailText },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.episodeTitle,
+                    { borderColor: colors.text, color: colors.text },
+                  ]}
+                >
+                  {item.name}
+                </Text>
                 <BouncyCheckbox
                   isChecked={watched.has(item.episode_number)}
                   onPress={() => toggleWatched(item.episode_number)}
-                  fillColor="#7850bf"
-                  unfillColor="white"
+                  fillColor={colors.primary}
+                  unfillColor={colors.input}
                   innerIconStyle={{ borderRadius: 50 }}
                   iconStyle={{
                     borderRadius: 50,
@@ -176,26 +232,58 @@ const SeasonScreen = ({ route, navigation }) => {
                 />
               </View>
               <View style={styles.episodeDetails}>
-                <Text style={styles.detailText}>
+                <Text
+                  style={[
+                    styles.detailText,
+                    { color: colors.gray, opacity: colors.opacity },
+                  ]}
+                >
                   S{seasonNumber} E{item.episode_number}
                 </Text>
-                <Text style={styles.detailText}> • {item.runtime} mins</Text>
+                <Text
+                  style={[
+                    styles.detailText,
+                    { color: colors.gray, opacity: colors.opacity },
+                  ]}
+                >
+                  {" "}
+                  • {item.runtime} mins
+                </Text>
               </View>
               {item.overview?.length > 100 ? (
                 <>
-                  <Text style={styles.overview}>
+                  <Text
+                    style={[
+                      styles.overview,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     {expandedEpisodes[item.id]
                       ? item.overview
                       : `${item.overview?.substring(0, 100)}...`}
                   </Text>
                   <Pressable onPress={() => toggleEpisodeExpanded(item.id)}>
-                    <Text style={styles.readMore}>
+                    <Text
+                      style={[
+                        styles.readMore,
+                        {
+                          color: colors.secondary,
+                        },
+                      ]}
+                    >
                       {expandedEpisodes[item.id] ? "Read Less" : "Read More..."}
                     </Text>
                   </Pressable>
                 </>
               ) : (
-                <Text style={styles.overview}>{item.overview}</Text>
+                <Text
+                  style={[
+                    styles.overview,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {item.overview}
+                </Text>
               )}
             </View>
           )}
@@ -263,7 +351,6 @@ const styles = StyleSheet.create({
   },
   episodeContainer: {
     borderRadius: 10,
-    backgroundColor: "#f7f7f7",
     marginBottom: 10,
     padding: 10,
     shadowColor: "#000",
@@ -288,7 +375,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 16,
-    color: "gray",
   },
   poster: {
     width: 380,
@@ -299,14 +385,12 @@ const styles = StyleSheet.create({
   synopsisContainer: {
     borderWidth: 1,
     borderRadius: 10,
-    backgroundColor: "#fff",
     padding: 10,
   },
   synopsis: {
     fontSize: 15,
   },
   readMore: {
-    color: "#3F51B5",
     marginTop: 5,
   },
 });

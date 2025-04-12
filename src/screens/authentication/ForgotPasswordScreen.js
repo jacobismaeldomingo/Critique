@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TextInput,
@@ -10,10 +10,15 @@ import {
 import { sendPasswordResetEmail } from "firebase/auth";
 import { firebase_auth } from "../../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const handleForgotPassword = async () => {
     setError("");
@@ -41,33 +46,52 @@ const ForgotPasswordScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
-      <Text style={styles.text}>Email:</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text
+        style={[styles.title, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Forgot Password
+      </Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Email:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          error ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          error ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Enter your email or username"
           value={email}
           onChangeText={setEmail}
           placeholderTextColor={"#888"}
         />
         {error ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+      ) : null}
 
       <Pressable
         style={({ pressed }) => [
           {
             opacity: pressed ? 0.5 : 1,
             marginTop: 50,
+            backgroundColor: colors.button,
           },
           styles.button,
         ]}
@@ -80,6 +104,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         style={({ pressed }) => [
           {
             opacity: pressed ? 0.5 : 1,
+            backgroundColor: colors.button,
           },
           styles.button,
         ]}
@@ -106,26 +131,20 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
-  },
-  inputContainerError: {
-    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#7850bf",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

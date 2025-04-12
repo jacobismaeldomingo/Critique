@@ -1,5 +1,5 @@
 // components/CategoryModal.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Modal,
   View,
@@ -12,9 +12,15 @@ import {
 import { updateShowProgress } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { Rating } from "@kolking/react-native-rating";
+import { ThemeContext } from "./ThemeContext";
+import { getTheme } from "./theme";
 
 const RateModal = ({ isVisible, onClose, showId, type }) => {
   const [rating, setRating] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     const loadRatings = async () => {
@@ -25,6 +31,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
           type
         );
         setRating(ratingDetails);
+        setIsSaved(ratingDetails !== 0); // Check if rating is loaded (not zero)
       }
     };
 
@@ -44,6 +51,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
           type,
           data
         );
+        setIsSaved(true);
         Alert.alert("Ratings update successfully!");
         onClose();
       } else {
@@ -56,6 +64,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
 
   const handleStarPress = (newRating) => {
     setRating(newRating);
+    setIsSaved(false);
   };
 
   const handleInputChange = (text) => {
@@ -71,7 +80,10 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
   };
 
   const handleClose = () => {
-    setRating("0");
+    if (!isSaved || rating === "") {
+      setRating("0"); // Reset rating to 0 only if it's not saved and empty
+    }
+
     onClose();
   };
 
@@ -83,8 +95,20 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.label}>Your Ratings</Text>
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <Text
+            style={[
+              styles.label,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Your Ratings
+          </Text>
           <View style={styles.ratingContainer}>
             <Rating
               maxRating={5}
@@ -93,22 +117,33 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
               size={24}
               fillColor="#9575CD"
               touchColor="#FFFFFF"
-              baseColor="#9E9E9E"
+              baseColor={colors.gray}
             />
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { borderColor: colors.gray }]}>
               <TextInput
-                style={styles.ratingInput}
+                style={[
+                  styles.ratingInput,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
                 keyboardType="numeric"
                 value={rating.toString()}
                 onChangeText={handleInputChange}
               />
-              <Text style={styles.slashFive}>/ 5</Text>
+              <Text
+                style={[
+                  styles.slashFive,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+              >
+                / 5
+              </Text>
             </View>
           </View>
           <Pressable
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.closeButton,
             ]}
@@ -120,6 +155,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
+                backgroundColor: colors.button,
               },
               styles.closeButton,
             ]}
@@ -142,7 +178,6 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: "80%",
-    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
     shadowColor: "#000",
@@ -162,15 +197,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginVertical: 10,
   },
-  ratingText: {
-    fontSize: 16,
-    marginLeft: 10,
-  },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#9E9E9E",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -179,16 +209,13 @@ const styles = StyleSheet.create({
   ratingInput: {
     textAlign: "center",
     fontSize: 16,
-    color: "#000",
   },
   slashFive: {
     fontSize: 16,
     marginLeft: 5,
-    color: "#000",
   },
   closeButton: {
     marginTop: 16,
-    backgroundColor: "#7850bf",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",

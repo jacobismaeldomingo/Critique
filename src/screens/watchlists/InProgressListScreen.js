@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { getSavedShows } from "../../services/firestore";
 import { firebase_auth } from "../../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const InProgressListScreen = ({ navigation }) => {
   const [inProgressMovies, setInProgressMovies] = useState([]);
@@ -25,9 +27,11 @@ const InProgressListScreen = ({ navigation }) => {
 
   const backdropWidth = width * 0.9; // 90% of screen width
   const backdropHeight = backdropWidth * (10 / 19); // Maintain aspect ratio (similar to 380x200)
-
   const posterWidth = backdropWidth * 0.26; // 26% of backdrop width
   const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 100x150)
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,8 +119,13 @@ const InProgressListScreen = ({ navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -126,40 +135,69 @@ const InProgressListScreen = ({ navigation }) => {
             ]}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>In Progress List</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              In Progress List
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <View style={styles.tabContainer}>
           <Pressable onPress={() => setActiveTab("movies")}>
             <Text
-              style={[styles.tab, activeTab === "movies" && styles.activeTab]}
+              style={[
+                styles.tab,
+                { color: colors.gray },
+                activeTab === "movies" && {
+                  fontWeight: "bold",
+                  color: colors.secondary,
+                },
+              ]}
             >
               Movies
             </Text>
           </Pressable>
           <Pressable onPress={() => setActiveTab("tvSeries")}>
             <Text
-              style={[styles.tab, activeTab === "tvSeries" && styles.activeTab]}
+              style={[
+                styles.tab,
+                { color: colors.gray },
+                activeTab === "tvSeries" && {
+                  fontWeight: "bold",
+                  color: colors.secondary,
+                },
+              ]}
             >
               TV Series
             </Text>
           </Pressable>
         </View>
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { borderColor: colors.gray }]}>
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              { borderColor: colors.gray, color: colors.text },
+            ]}
             placeholder="Search your in progress list..."
-            placeholderTextColor="gray"
+            placeholderTextColor={colors.grey}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={clearSearchQuery}>
-              <Ionicons name="close-circle" size={20} color="#888" />
+              <Ionicons name="close-circle" size={20} color={colors.close} />
             </Pressable>
           )}
         </View>
@@ -168,7 +206,14 @@ const InProgressListScreen = ({ navigation }) => {
           renderItem={renderShowItem}
           keyExtractor={(item) => item.id.toString()}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No shows added yet.</Text>
+            <Text
+              style={[
+                styles.emptyText,
+                { color: colors.grey, opacity: colors.opacity },
+              ]}
+            >
+              No shows added yet.
+            </Text>
           }
         />
       </View>
@@ -179,12 +224,10 @@ const InProgressListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -203,7 +246,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "black",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -214,16 +256,10 @@ const styles = StyleSheet.create({
   },
   tab: {
     fontSize: 18,
-    color: "gray",
-  },
-  activeTab: {
-    color: "#3F51B5",
-    fontWeight: "bold",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 10,
@@ -275,7 +311,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     padding: 20,
-    color: "gray",
   },
 });
 

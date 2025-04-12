@@ -1,5 +1,5 @@
 // WatchListScreen - Contains screens for movies and tv series
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import { getSavedShows } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
+import { ThemeContext } from "../components/ThemeContext";
+import { getTheme } from "../components/theme";
 
 const { width } = Dimensions.get("window"); // Get device width
 
@@ -43,6 +45,9 @@ const WatchListScreen = ({ navigation }) => {
   const [tvSeries, setTVSeries] = useState([]);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
+
   useFocusEffect(
     useCallback(() => {
       const loadSavedShows = async () => {
@@ -65,17 +70,13 @@ const WatchListScreen = ({ navigation }) => {
 
   const handleShowDetails = useCallback(
     (item) => {
-      if (activeTab === "movies") {
-        navigation.navigate("MovieDetails", {
+      navigation.navigate(
+        activeTab === "movies" ? "MovieDetails" : "TVSeriesDetails",
+        {
           showId: item.id,
-          type: "movies",
-        });
-      } else {
-        navigation.navigate("TVSeriesDetails", {
-          showId: item.id,
-          type: "tvSeries",
-        });
-      }
+          type: item.media_type,
+        }
+      );
     },
     [activeTab, navigation]
   );
@@ -89,12 +90,24 @@ const WatchListScreen = ({ navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
-          <Text style={styles.header}>Watchlist</Text>
+          <Text
+            style={[
+              styles.header,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Watchlist
+          </Text>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <View style={{ flexDirection: "row", marginTop: 10, marginBottom: 15 }}>
           <Pressable
             onPress={() => setActiveTab("movies")}
@@ -108,7 +121,7 @@ const WatchListScreen = ({ navigation }) => {
             <Text
               style={{
                 fontSize: 20,
-                color: activeTab === "movies" ? "#3F51B5" : "#9E9E9E",
+                color: activeTab === "movies" ? colors.secondary : colors.gray,
                 fontWeight: activeTab === "movies" ? "bold" : "normal",
               }}
             >
@@ -127,7 +140,8 @@ const WatchListScreen = ({ navigation }) => {
             <Text
               style={{
                 fontSize: 20,
-                color: activeTab === "tvSeries" ? "#3F51B5" : "#9E9E9E",
+                color:
+                  activeTab === "tvSeries" ? colors.secondary : colors.gray,
                 fontWeight: activeTab === "tvSeries" ? "bold" : "normal",
               }}
             >
@@ -144,7 +158,7 @@ const WatchListScreen = ({ navigation }) => {
               },
             ]}
           >
-            <Ionicons name="search" size={26} color="#3F51B5" />
+            <Ionicons name="search" size={26} color={colors.secondary} />
           </Pressable>
         </View>
         {["Watched", "In Progress", "Plan to Watch"].map((category) => {
@@ -157,11 +171,18 @@ const WatchListScreen = ({ navigation }) => {
           return (
             <View key={category} style={styles.categoryContainer}>
               <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>{category}</Text>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                >
+                  {category}
+                </Text>
                 <Pressable
                   style={({ pressed }) => [
                     {
-                      opacity: pressed ? 0.5 : 1,
+                      opacity: pressed ? 0.5 : colors.opacity,
                       marginRight: 10,
                     },
                   ]}
@@ -186,7 +207,7 @@ const WatchListScreen = ({ navigation }) => {
                   <Ionicons
                     name="chevron-forward-outline"
                     size={20}
-                    color="black"
+                    color={colors.icon}
                   />
                 </Pressable>
               </View>
@@ -196,7 +217,12 @@ const WatchListScreen = ({ navigation }) => {
                 renderItem={renderShowItem}
                 keyExtractor={(item) => item.id.toString()}
                 ListEmptyComponent={
-                  <Text style={styles.text}>
+                  <Text
+                    style={[
+                      styles.text,
+                      { color: colors.text, opacity: colors.opacity },
+                    ]}
+                  >
                     You haven't added any shows yet in this category.
                   </Text>
                 }
@@ -222,12 +248,10 @@ const WatchListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -238,10 +262,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     fontWeight: "bold",
-    color: "#000000",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -254,7 +276,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 10,
     fontWeight: "500",
-    color: "#000000",
   },
   categoryContainer: {
     flex: 1,
@@ -268,7 +289,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#000000",
   },
 });
 

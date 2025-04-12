@@ -1,5 +1,5 @@
 // screens/SignupScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { View, TextInput, Text, StyleSheet, Pressable } from "react-native";
 import {
   createUserWithEmailAndPassword,
@@ -16,6 +16,8 @@ import {
 } from "firebase/firestore";
 import { Ionicons } from "react-native-vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const SignupScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -33,6 +35,9 @@ const SignupScreen = ({ navigation }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -135,102 +140,166 @@ const SignupScreen = ({ navigation }) => {
     return (
       <View style={styles.passwordCriteria}>
         {condition ? (
-          <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={20}
+            color={colors.success}
+          />
         ) : (
-          <Ionicons name="checkmark-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         )}
-        <Text style={styles.textCriteria}> {text}</Text>
+        <Text
+          style={[
+            styles.textCriteria,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
+        >
+          {" "}
+          {text}
+        </Text>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-      <Text style={styles.text}>Email Address:</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text
+        style={[styles.title, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Sign Up
+      </Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Email Address:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          emailError ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          emailError ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="john.doe@domain.com"
           value={email}
           onChangeText={setEmail}
-          placeholderTextColor={"#9E9E9E"}
+          placeholderTextColor={colors.gray}
         />
         {email.length > 0 && (
           <Pressable onPress={clearEmail}>
-            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
+            <Ionicons name="close-circle" size={20} color={colors.close} />
           </Pressable>
         )}
         {emailError && email.length === 0 ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
-      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+      {emailError ? (
+        <Text style={[styles.errorText, { color: colors.error }]}>
+          {emailError}
+        </Text>
+      ) : null}
 
-      <Text style={styles.text}>Username:</Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Username:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          usernameError ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          usernameError ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Create a username"
           value={username}
           onChangeText={setUsername}
-          placeholderTextColor={"#9E9E9E"}
+          placeholderTextColor={colors.gray}
         />
         {username.length > 0 && (
           <Pressable onPress={clearUsername}>
-            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
+            <Ionicons name="close-circle" size={20} color={colors.close} />
           </Pressable>
         )}
         {usernameError && username.length === 0 ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
       {usernameError ? (
-        <Text style={styles.errorText}>{usernameError}</Text>
+        <Text style={[styles.errorText, { color: colors.error }]}>
+          {usernameError}
+        </Text>
       ) : null}
 
-      <Text style={styles.text}>Password:</Text>
+      <Text
+        style={[styles.text, { color: colors.text, opacity: colors.opacity }]}
+      >
+        Password:
+      </Text>
       <View
         style={[
           styles.inputContainer,
-          passwordError ? styles.inputContainerError : null,
+          { borderColor: colors.gray },
+          passwordError ? { borderColor: colors.error } : null,
         ]}
       >
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { color: colors.text, opacity: colors.opacity },
+          ]}
           placeholder="Create a password"
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={validatePassword}
           onFocus={() => setShowPasswordValidation(true)} // Show validation on focus
           onBlur={() => setShowPasswordValidation(password.length > 0)} // Hide validation on blur if password is empty
-          placeholderTextColor={"#9E9E9E"}
+          placeholderTextColor={colors.gray}
         />
         {showPasswordValidation && (
           <Pressable onPress={togglePasswordVisibility}>
             <Ionicons
               name={showPassword ? "eye-off" : "eye"}
               size={20}
-              color="#9E9E9E"
+              color={colors.close}
             />
           </Pressable>
         )}
         {passwordError && !showPasswordValidation ? (
-          <Ionicons name="alert-circle-outline" size={20} color="#FF5252" />
+          <Ionicons
+            name="alert-circle-outline"
+            size={20}
+            color={colors.error}
+          />
         ) : null}
       </View>
       {passwordError ? (
-        <Text style={styles.errorText}>{passwordError}</Text>
+        <Text style={[styles.errorText, { color: colors.error }]}>
+          {passwordError}
+        </Text>
       ) : null}
 
       {showPasswordValidation && (
@@ -263,6 +332,7 @@ const SignupScreen = ({ navigation }) => {
           {
             opacity: pressed ? 0.5 : 1,
             marginTop: 50,
+            backgroundColor: colors.button,
           },
           styles.button,
         ]}
@@ -275,6 +345,7 @@ const SignupScreen = ({ navigation }) => {
         style={({ pressed }) => [
           {
             opacity: pressed ? 0.5 : 1,
+            backgroundColor: colors.button,
           },
           styles.button,
         ]}
@@ -302,26 +373,20 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 8,
     marginBottom: 8,
     paddingHorizontal: 8,
-  },
-  inputContainerError: {
-    borderColor: "#FF5252",
   },
   input: {
     flex: 1,
     height: 40,
   },
   errorText: {
-    color: "#FF5252",
     marginBottom: 16,
     fontSize: 14,
   },
   button: {
-    backgroundColor: "#9575CD",
     padding: 12,
     borderRadius: 8,
     alignItems: "center",

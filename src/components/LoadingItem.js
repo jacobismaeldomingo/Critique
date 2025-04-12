@@ -1,12 +1,22 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { ThemeContext } from "./ThemeContext";
+import { getTheme } from "./theme";
 
 const LoadingItem = () => {
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
+
   return (
     <>
-      <View style={styles.upperContainer} />
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#7850bf" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     </>
   );
@@ -15,7 +25,6 @@ const LoadingItem = () => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,

@@ -112,6 +112,11 @@ const PhotoViewerScreen = ({ navigation, route }) => {
           style={styles.image}
           resizeMode="contain"
         />
+        {currentPhoto?.caption && !currentPhoto?.hideCaption && (
+          <View style={styles.captionContainer}>
+            <Text style={styles.captionText}>{currentPhoto.caption}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.footer}>
@@ -211,6 +216,21 @@ const styles = StyleSheet.create({
     color: "#9E9E9E",
     fontSize: 14,
     marginTop: 5,
+  },
+  captionContainer: {
+    position: "absolute",
+    bottom: 10,
+    left: 20,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  captionText: {
+    color: "white",
+    fontSize: 16,
+    textAlign: "center",
   },
 });
 

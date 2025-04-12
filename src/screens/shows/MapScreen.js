@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import { Ionicons } from "react-native-vector-icons";
 import { firebase_auth } from "../../../firebaseConfig";
 import { saveWatchLocation, getMovieData } from "../../services/firestore";
 import Geocoder from "react-native-geocoding";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 Geocoder.init("AIzaSyASxi5UgDU5ZaiB-Tgv6oRfKUrhaRWSGKE");
 
@@ -22,6 +24,9 @@ const MapScreen = ({ route, navigation }) => {
   const [address, setAddress] = useState("");
   const [selectedLocation, setSelectedLocation] = useState(null);
   const mapRef = useRef(null);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     const fetchLocation = async () => {
@@ -103,26 +108,53 @@ const MapScreen = ({ route, navigation }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back-outline" size={28} color="black" />
+            <Ionicons
+              name="chevron-back-outline"
+              size={28}
+              color={colors.icon}
+              opacity={colors.opacity}
+            />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Maps</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              Maps
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <View style={styles.searchContainer}>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                color: colors.text,
+                opacity: colors.opacity,
+                borderColor: colors.grey,
+              },
+            ]}
             placeholder="Search theatre or address"
             value={address}
             onChangeText={setAddress}
-            placeholderTextColor={"#9E9E9E"}
+            placeholderTextColor={colors.gray}
           />
-          <Pressable style={styles.searchButton} onPress={handleSearch}>
+          <Pressable
+            style={[styles.searchButton, { backgroundColor: colors.secondary }]}
+            onPress={handleSearch}
+          >
             <Ionicons name="search" size={24} color="white" />
           </Pressable>
         </View>
@@ -134,8 +166,8 @@ const MapScreen = ({ route, navigation }) => {
               initialRegion={{
                 latitude: location.latitude,
                 longitude: location.longitude,
-                latitudeDelta: 0.1,
-                longitudeDelta: 0.1,
+                latitudeDelta: 0.03,
+                longitudeDelta: 0.03,
               }}
             >
               <Marker
@@ -169,12 +201,10 @@ const MapScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -193,7 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 5,
   },
@@ -205,14 +234,12 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 40,
-    borderColor: "gray",
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
   },
   searchButton: {
     marginLeft: 10,
-    backgroundColor: "#3F51B5",
     padding: 10,
     borderRadius: 5,
   },

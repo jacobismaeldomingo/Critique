@@ -107,6 +107,43 @@ export const saveWatchLocation = async (userId, showId, type, location) => {
   }
 };
 
+// Save watched episodes to Firestore
+export const saveWatchedEpisodes = async (
+  userId,
+  seriesId,
+  seasonNumber,
+  watchedEps
+) => {
+  const docRef = doc(db, "users", userId, "tvSeries", seriesId.toString());
+  const existingDoc = await getDoc(docRef);
+
+  const seasonKey = `Season ${seasonNumber}`;
+
+  let newWatchedData = { [seasonKey]: watchedEps };
+
+  if (existingDoc.exists()) {
+    const existingData = existingDoc.data().watchedEpisodes || {};
+    newWatchedData = {
+      ...existingData,
+      [seasonKey]: watchedEps,
+    };
+  }
+
+  await setDoc(docRef, { watchedEpisodes: newWatchedData }, { merge: true });
+};
+
+// Get watched episodes from Firestore
+export const getWatchedEpisodes = async (userId, seriesId) => {
+  const docRef = doc(db, "users", userId, "tvSeries", seriesId.toString());
+  const snapshot = await getDoc(docRef);
+
+  if (snapshot.exists()) {
+    return snapshot.data().watchedEpisodes || {};
+  }
+
+  return {};
+};
+
 // Get all saved movies or TV series for a user.
 export const getSavedShows = async (userId, type) => {
   try {

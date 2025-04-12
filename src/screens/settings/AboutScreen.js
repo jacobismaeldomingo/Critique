@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,22 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const AboutScreen = ({ navigation }) => {
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
+
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -26,28 +36,69 @@ const AboutScreen = ({ navigation }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
+              opacity={colors.opacity}
               style={{ marginRight: 50 }}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>About</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              About
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
         <View style={styles.contentContainer}>
-          <Text style={styles.sectionTitle}>Film Diary</Text>
-          <Text style={styles.sectionText}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Film Diary
+          </Text>
+          <Text
+            style={[
+              styles.sectionText,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
             A Film Diary app that allows users to record, track and review
             movies, TV shows, and films they watch across different platforms.
             It provides personalized recommendations based on your viewing
             history and preferences.
           </Text>
 
-          <Text style={styles.sectionTitle}>Version</Text>
-          <Text style={styles.sectionText}>1.0.0</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Version
+          </Text>
+          <Text
+            style={[
+              styles.sectionText,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            1.0.0
+          </Text>
 
-          <Text style={styles.sectionTitle}>Data Provider</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Data Provider
+          </Text>
           <View style={styles.tmdbContainer}>
             <Image
               width="150"
@@ -55,20 +106,43 @@ const AboutScreen = ({ navigation }) => {
               source={require("../../../assets/tmdb-logo.png")}
             />
           </View>
-          <Text style={styles.sectionText}>
+          <Text
+            style={[
+              styles.sectionText,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
             This product uses the TMDB API but is not endorsed or certified by
             TMDB.
           </Text>
           <Pressable
             onPress={() => Linking.openURL("https://www.themoviedb.org/")}
           >
-            <Text style={[styles.sectionText, styles.link]}>
+            <Text
+              style={[
+                styles.sectionText,
+                styles.link,
+                { color: colors.secondary },
+              ]}
+            >
               Visit TMDB Website
             </Text>
           </Pressable>
 
-          <Text style={styles.sectionTitle}>About This Project</Text>
-          <Text style={styles.sectionText}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            About This Project
+          </Text>
+          <Text
+            style={[
+              styles.sectionText,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
             This app was created as a university project for educational
             purposes.
           </Text>
@@ -79,7 +153,13 @@ const AboutScreen = ({ navigation }) => {
               )
             }
           >
-            <Text style={[styles.sectionText, styles.link]}>
+            <Text
+              style={[
+                styles.sectionText,
+                styles.link,
+                { color: colors.secondary },
+              ]}
+            >
               View Project on GitLab
             </Text>
           </Pressable>
@@ -94,9 +174,22 @@ const AboutScreen = ({ navigation }) => {
             </Text>
           </Pressable> */}
 
-          <Text style={styles.sectionTitle}>Contact Us</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.text, opacity: colors.opacity },
+            ]}
+          >
+            Contact Us
+          </Text>
           <Pressable onPress={() => Linking.openURL("mailto:your@email.com")}>
-            <Text style={[styles.sectionText, styles.link]}>
+            <Text
+              style={[
+                styles.sectionText,
+                styles.link,
+                { color: colors.secondary },
+              ]}
+            >
               jacob.domingo@dal.ca
             </Text>
           </Pressable>
@@ -109,12 +202,10 @@ const AboutScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -133,7 +224,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
@@ -152,7 +242,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   link: {
-    color: "#3F51B5",
     textDecorationLine: "underline",
   },
   tmdbContainer: {

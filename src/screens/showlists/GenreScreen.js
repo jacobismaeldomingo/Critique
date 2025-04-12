@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,8 @@ import {
 import { Ionicons } from "react-native-vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import placeholderPoster from "../../../assets/no-poster-available.png";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const GenreScreen = ({ route }) => {
   const { genreId, genreName } = route.params;
@@ -38,6 +40,9 @@ const GenreScreen = ({ route }) => {
 
   const posterWidth = width * 0.28; // 28% of screen width
   const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   // Initial data loading
   useEffect(() => {
@@ -192,11 +197,15 @@ const GenreScreen = ({ route }) => {
     <View style={styles.searchContainer}>
       <View style={{ flexDirection: "row", flex: 1, alignItems: "center" }}>
         <TextInput
-          style={styles.searchInput}
+          style={[
+            styles.searchInput,
+            { borderColor: colors.gray, color: colors.text },
+          ]}
           placeholder="Search shows..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoFocus
+          placeholderTextColor={colors.gray}
         />
         {searchQuery.length > 0 && (
           <Pressable
@@ -210,7 +219,7 @@ const GenreScreen = ({ route }) => {
               { opacity: pressed ? 0.5 : 1 },
             ]}
           >
-            <Ionicons name="close-circle" size={20} color="#9E9E9E" />
+            <Ionicons name="close-circle" size={20} color={colors.gray} />
           </Pressable>
         )}
       </View>
@@ -224,7 +233,7 @@ const GenreScreen = ({ route }) => {
           { opacity: pressed ? 0.5 : 1 },
         ]}
       >
-        <Ionicons name="close" size={24} color="#3F51B5" />
+        <Ionicons name="close" size={24} color={colors.secondary} />
       </Pressable>
     </View>
   );
@@ -240,8 +249,13 @@ const GenreScreen = ({ route }) => {
 
   return (
     <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -254,15 +268,23 @@ const GenreScreen = ({ route }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
+              opacity={colors.opacity}
               style={{ marginRight: 45 }}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>{genreName} Shows</Text>
+            <Text
+              style={[
+                styles.header,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
+              {genreName} Shows
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
 
         {isSearchVisible ? (
           renderSearchBar()
@@ -280,7 +302,8 @@ const GenreScreen = ({ route }) => {
               <Text
                 style={{
                   fontSize: 20,
-                  color: activeTab === "movies" ? "#3F51B5" : "#9E9E9E",
+                  color:
+                    activeTab === "movies" ? colors.secondary : colors.gray,
                   fontWeight: activeTab === "movies" ? "bold" : "normal",
                 }}
               >
@@ -299,7 +322,8 @@ const GenreScreen = ({ route }) => {
               <Text
                 style={{
                   fontSize: 20,
-                  color: activeTab === "tvSeries" ? "#3F51B5" : "#9E9E9E",
+                  color:
+                    activeTab === "tvSeries" ? colors.secondary : colors.gray,
                   fontWeight: activeTab === "tvSeries" ? "bold" : "normal",
                 }}
               >
@@ -316,7 +340,7 @@ const GenreScreen = ({ route }) => {
                 },
               ]}
             >
-              <Ionicons name="search" size={26} color="#3F51B5" />
+              <Ionicons name="search" size={26} color={colors.secondary} />
             </Pressable>
           </View>
         )}
@@ -330,7 +354,12 @@ const GenreScreen = ({ route }) => {
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            <Text style={styles.text}>
+            <Text
+              style={[
+                styles.text,
+                { color: colors.text, opacity: colors.opacity },
+              ]}
+            >
               {searchQuery.trim() !== ""
                 ? "No matches found."
                 : `No ${
@@ -340,7 +369,7 @@ const GenreScreen = ({ route }) => {
           }
           ListFooterComponent={
             shouldShowLoading() ? (
-              <ActivityIndicator size="large" color="#3F51B5" />
+              <ActivityIndicator size="large" color={colors.secondary} />
             ) : null
           }
         />
@@ -352,12 +381,10 @@ const GenreScreen = ({ route }) => {
 const styles = StyleSheet.create({
   upperContainer: {
     paddingBottom: 60,
-    backgroundColor: "#7850bf",
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -376,35 +403,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
-  },
-  genreButton: {
-    padding: 10,
-    margin: 5,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  genreText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    margin: 10,
-  },
-  saveButton: {
-    backgroundColor: "#007BFF",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
   },
   showItem: {
     marginTop: 10,
@@ -425,7 +425,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    borderColor: "#9E9E9E",
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
