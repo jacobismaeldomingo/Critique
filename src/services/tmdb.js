@@ -180,6 +180,28 @@ export const fetchMovieCast = async (movieId) => {
   }
 };
 
+// export const fetchMovieFullCast = async (movieId) => {
+//   try {
+//     const response = await fetch(
+//       `${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`
+//     );
+//     const data = await response.json();
+
+//     if (!response.ok) {
+//       console.error("API Error:", data);
+//       return null;
+//     }
+
+//     return {
+//       cast: data.cast || [],
+//       crew: data.crew || [],
+//     };
+//   } catch (error) {
+//     console.error("Error fetching Movie cast:", error);
+//     return null;
+//   }
+// };
+
 export const fetchTVSeriesProviders = async (seriesId) => {
   try {
     const response = await fetch(
@@ -211,6 +233,19 @@ export const fetchTVSeriesCast = async (seriesId) => {
     return null;
   }
 };
+
+// export const fetchTVSeriesFullCast = async (seriesId) => {
+//   try {
+//     const response = await fetch(
+//       `${BASE_URL}/tv/${seriesId}/aggregate_credits?api_key=${API_KEY}`
+//     );
+//     const data = await response.json();
+//     return data;
+//   } catch (error) {
+//     console.error("Error fetching TV series cast:", error);
+//     return null;
+//   }
+// };
 
 export const fetchSeason = async (seriesId, seasonNumber) => {
   try {

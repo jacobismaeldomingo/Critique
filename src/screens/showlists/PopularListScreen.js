@@ -9,6 +9,8 @@ import {
   ImageBackground,
   ActivityIndicator,
   Dimensions,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import { fetchPopularMovies, fetchPopularTVSeries } from "../../services/tmdb";
@@ -112,7 +114,7 @@ const PopularListScreen = ({ route }) => {
   );
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -161,13 +163,16 @@ const PopularListScreen = ({ route }) => {
           }
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

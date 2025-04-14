@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Linking,
   Image,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import { ThemeContext } from "../../components/ThemeContext";
@@ -16,7 +18,7 @@ const AboutScreen = ({ navigation }) => {
   const colors = getTheme(theme);
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -195,13 +197,16 @@ const AboutScreen = ({ navigation }) => {
           </Pressable>
         </View>
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

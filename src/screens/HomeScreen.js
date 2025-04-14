@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,10 @@ import {
   ScrollView,
   Alert,
   Dimensions,
+  Animated,
+  Easing,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import {
   fetchTrendingMovies,
@@ -19,11 +23,17 @@ import {
   fetchNowPlaying,
 } from "../services/tmdb";
 import { firebase_auth } from "../../firebaseConfig";
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons, MaterialIcons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
 import placeholderPoster from "../../assets/no-poster-available.png";
 import { ThemeContext } from "../components/ThemeContext";
 import { getTheme } from "../components/theme";
+
+const { width } = Dimensions.get("window");
+const posterWidth = width * 0.3;
+const posterHeight = posterWidth * 1.5;
+const featuredWidth = width * 0.85;
+const featuredHeight = featuredWidth * 0.56;
 
 const HomeScreen = ({ navigation }) => {
   const [isEmailVerified, setIsEmailVerified] = useState(false);
@@ -32,48 +42,36 @@ const HomeScreen = ({ navigation }) => {
   const [popularMovies, setPopularMovies] = useState([]);
   const [popularTVSeries, setPopularTVSeries] = useState([]);
   const [nowPlaying, setNowPlaying] = useState([]);
-  const [preferredMovies, setPreferredMovies] = useState([]);
-  const [preferredTVSeries, setpreferredTVSeries] = useState([]);
   const [genres, setGenres] = useState([]);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-
-  const { width } = Dimensions.get("window"); // Get device width
-
-  const posterWidth = width * 0.3; // 30% of screen width
-  const posterHeight = posterWidth * 1.5; // Maintain aspect ratio
-  const movieItemWitdh = width * 0.8; // 80% of screen width
-  const movieItemHeight = movieItemWitdh * (9 / 16); // Maintain aspect ratio (16:9)
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(20)).current;
+
   useEffect(() => {
+    // Entry animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     const user = firebase_auth.currentUser;
     if (user) {
       setIsEmailVerified(user.emailVerified);
     }
-
-    const getMoviesAndTV = async () => {
-      const trendingMovies = await fetchTrendingMovies();
-      setMovies(trendingMovies);
-      const trendingTVSeries = await fetchTrendingTVSeries();
-      setTVSeries(trendingTVSeries);
-
-      const popularMovies = await fetchPopularMovies();
-      setPopularMovies(popularMovies);
-      const popularSeries = await fetchPopularTVSeries();
-      setPopularTVSeries(popularSeries);
-
-      const nowPlaying = await fetchNowPlaying();
-      setNowPlaying(nowPlaying);
-    };
-
-    const getGenres = async () => {
-      const genreList = await fetchGenres();
-      setGenres(genreList);
-    };
-
-    getGenres();
 
     // const fetchUserPreferences = async () => {
     //   const user = firebase_auth.currentUser;
@@ -86,8 +84,33 @@ const HomeScreen = ({ navigation }) => {
     //   }
     // };
 
-    getMoviesAndTV();
-    // fetchUserPreferences();
+    // Load data
+    const loadData = async () => {
+      const [
+        trendingMovies,
+        trendingTVSeries,
+        popularMovies,
+        popularSeries,
+        nowPlaying,
+        genreList,
+      ] = await Promise.all([
+        fetchTrendingMovies(),
+        fetchTrendingTVSeries(),
+        fetchPopularMovies(),
+        fetchPopularTVSeries(),
+        fetchNowPlaying(),
+        fetchGenres(),
+      ]);
+
+      setMovies(trendingMovies);
+      setTVSeries(trendingTVSeries);
+      setPopularMovies(popularMovies);
+      setPopularTVSeries(popularSeries);
+      setNowPlaying(nowPlaying);
+      setGenres(genreList);
+    };
+
+    loadData();
   }, []);
 
   const handleResendVerification = async () => {
@@ -108,442 +131,406 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
-  const renderShowItem = ({ item }) => (
-    <Pressable style={styles.movieItem} onPress={() => handleShowDetails(item)}>
-      <Image
-        source={
-          item.poster_path
-            ? { uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }
-            : placeholderPoster
-        }
-        style={{
-          width: posterWidth,
-          height: posterHeight,
-          marginRight: 10,
-          borderRadius: 10,
-        }}
-      />
-    </Pressable>
-  );
-
-  const renderMovieItem = ({ item }) => (
-    <Pressable style={styles.movieItem} onPress={() => handleShowDetails(item)}>
-      <Image
-        source={
-          item.poster_path
-            ? { uri: `https://image.tmdb.org/t/p/w500${item.backdrop_path}` }
-            : placeholderPoster
-        }
-        style={{
-          width: movieItemWitdh,
-          height: movieItemHeight,
-          marginRight: 10,
-          borderRadius: 10,
-        }}
-      />
-      <Text
-        style={[
-          styles.movieTitle,
-          { color: colors.text, opacity: colors.opacity },
-        ]}
-      >
-        {item.title}
-      </Text>
-    </Pressable>
-  );
-
-  const renderGenreButton = ({ item }) => {
+  const renderShowItem = ({ item }) => {
+    const animation = new Animated.Value(1);
     return (
-      <Pressable
-        style={[styles.genreButton, { backgroundColor: item.color }]}
-        onPress={() =>
-          navigation.navigate("Genres", {
-            genreId: item.id,
-            genreName: item.name,
-          })
-        }
-      >
-        <Text style={styles.genreText}>{item.name}</Text>
-      </Pressable>
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          style={styles.movieItem}
+          onPress={() => handleShowDetails(item)}
+          onPressIn={() => {
+            Animated.spring(animation, {
+              toValue: 0.95,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+          onPressOut={() => {
+            Animated.spring(animation, {
+              toValue: 1,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+        >
+          <Image
+            source={
+              item.poster_path
+                ? { uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }
+                : placeholderPoster
+            }
+            style={styles.posterImage}
+          />
+        </Pressable>
+      </Animated.View>
     );
   };
 
-  return (
-    <>
-      <View
-        style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
-        ]}
-      />
-      <ScrollView
-        showsHorizontalScrollIndicator={false}
-        showsVerticalScrollIndicator={false}
-        style={[styles.container, { backgroundColor: colors.background }]}
-      >
-        <View style={styles.headerContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Ionicons name="menu" size={28} color={colors.secondary} />
-          </Pressable>
-          <Text
-            style={[
-              styles.header,
-              { color: colors.text, opacity: colors.opacity },
-            ]}
-          >
-            Home
+  const renderFeaturedItem = ({ item }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          style={styles.featuredItem}
+          onPress={() => handleShowDetails(item)}
+          onPressIn={() => {
+            Animated.spring(animation, {
+              toValue: 0.97,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+          onPressOut={() => {
+            Animated.spring(animation, {
+              toValue: 1,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+        >
+          <Image
+            source={
+              item.backdrop_path
+                ? {
+                    uri: `https://image.tmdb.org/t/p/w500${item.backdrop_path}`,
+                  }
+                : placeholderPoster
+            }
+            style={styles.featuredImage}
+          />
+          <Text style={[styles.featuredTitle, { color: colors.text }]}>
+            {item.title || item.name}
           </Text>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => setIsSearchVisible(true)}
-          >
-            <Ionicons name="search" size={26} color={colors.secondary} />
-          </Pressable>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
-        <Text style={[styles.title, { color: colors.primary }]}>
-          Welcome to Critique!
-        </Text>
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
-        {/* {!isEmailVerified && (
-          <View style={styles.banner}>
-            <Text style={styles.bannerText}>
-              Please verify your email to unlock all features.
-            </Text>
-            <Pressable style={styles.button} onPress={handleResendVerification}>
-              <Text style={styles.buttonText}>Resend Verification Email</Text>
-            </Pressable>
-          </View>
-        )} */}
-        <View style={styles.genreContainer}>
+  const renderGenreButton = ({ item }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          style={[styles.genreButton, { backgroundColor: item.color }]}
+          onPress={() =>
+            navigation.navigate("Genres", {
+              genreId: item.id,
+              genreName: item.name,
+            })
+          }
+          onPressIn={() => {
+            Animated.spring(animation, {
+              toValue: 0.95,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+          onPressOut={() => {
+            Animated.spring(animation, {
+              toValue: 1,
+              friction: 3,
+              useNativeDriver: true,
+            }).start();
+          }}
+        >
+          <Text style={styles.genreText}>{item.name}</Text>
+        </Pressable>
+      </Animated.View>
+    );
+  };
+
+  const renderSection = (title, data, iconName, listType, type, renderItem) => (
+    <Animated.View
+      style={[
+        styles.section,
+        { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
+      ]}
+    >
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleContainer}>
+          <MaterialIcons
+            name={iconName}
+            size={24}
+            color={colors.primary}
+            style={styles.sectionIcon}
+          />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {title}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() =>
+            navigation.navigate(`${listType}List`, {
+              type: type,
+            })
+          }
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <MaterialIcons
+            name="chevron-right"
+            size={28}
+            color={colors.primary}
+          />
+        </Pressable>
+      </View>
+      {data.length > 0 ? (
+        <FlatList
+          horizontal
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+        />
+      ) : (
+        <View style={styles.emptyState}>
+          <MaterialIcons
+            name="theaters"
+            size={40}
+            color={colors.gray}
+            style={styles.emptyIcon}
+          />
+          <Text style={[styles.emptyText, { color: colors.gray }]}>
+            No {title.toLowerCase()} available
+          </Text>
+        </View>
+      )}
+    </Animated.View>
+  );
+
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={() => navigation.navigate("Settings")}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}
+        >
+          <Ionicons name="menu" size={28} color="#fff" />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>Home</Text>
+        <Pressable
+          onPress={() => setIsSearchVisible(true)}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}
+        >
+          <Ionicons name="search" size={24} color="#fff" />
+        </Pressable>
+      </Animated.View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Animated.View
+          style={[
+            styles.welcomeContainer,
+            { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
+          ]}
+        >
+          <Text style={[styles.welcomeText, { color: colors.text }]}>
+            Welcome to
+          </Text>
+          <Text style={[styles.appName, { color: colors.primary }]}>
+            Critique
+          </Text>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.section,
+            { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Browse Genres
+          </Text>
           <FlatList
             horizontal
             data={genres}
             renderItem={renderGenreButton}
             keyExtractor={(item) => item.id.toString()}
-            style={{ marginVertical: 10 }}
             showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.genreList}
           />
-        </View>
-        <View style={{ paddingBottom: 50 }}>
-          <View style={styles.sectionContainer}>
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Now Playing
-              </Text>
-              <Ionicons
-                name="play-circle-outline"
-                size={24}
-                color={colors.icon}
-                opacity={colors.opacity}
-              />
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : colors.opacity,
-                  marginRight: 5,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("NowPlayingList", { type: "movies" })
-              }
-            >
-              <Ionicons
-                name="chevron-forward-outline"
-                size={24}
-                color={colors.icon}
-              />
-            </Pressable>
-          </View>
-          <FlatList
-            horizontal
-            data={nowPlaying}
-            renderItem={renderMovieItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-          />
+        </Animated.View>
 
-          <View style={[styles.sectionContainer, { marginTop: 5 }]}>
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Trending Movies
-              </Text>
-              <Ionicons
-                name="trending-up-outline"
-                size={24}
-                color={colors.icon}
-                opacity={colors.opacity}
-              />
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : colors.opacity,
-                  marginRight: 5,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("TrendingList", { type: "movies" })
-              }
-            >
-              <Ionicons
-                name="chevron-forward-outline"
-                size={24}
-                color={colors.icon}
-              />
-            </Pressable>
-          </View>
-          <FlatList
-            horizontal
-            data={movies}
-            renderItem={renderShowItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-          />
+        {renderSection(
+          "Now Playing",
+          nowPlaying,
+          "play-circle-filled",
+          "NowPlaying",
+          "movies",
+          renderFeaturedItem
+        )}
 
-          <View style={[styles.sectionContainer, { marginTop: 15 }]}>
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Trending TV Series
-              </Text>
-              <Ionicons
-                name="trending-up-outline"
-                size={24}
-                color={colors.icon}
-                opacity={colors.opacity}
-              />
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : colors.opacity,
-                  marginRight: 5,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("TrendingList", { type: "tvSeries" })
-              }
-            >
-              <Ionicons
-                name="chevron-forward-outline"
-                size={24}
-                color={colors.icon}
-              />
-            </Pressable>
-          </View>
-          <FlatList
-            horizontal
-            data={tvSeries}
-            renderItem={renderShowItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-          />
+        {renderSection(
+          "Trending Movies",
+          movies,
+          "trending-up",
+          "Trending",
+          "movies",
+          renderShowItem
+        )}
 
-          <View style={[styles.sectionContainer, { marginTop: 15 }]}>
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Popular Movies
-              </Text>
-              <Ionicons
-                name="heart"
-                size={22}
-                color={colors.icon}
-                opacity={colors.opacity}
-              />
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : colors.opacity,
-                  marginRight: 5,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("PopularList", { type: "movies" })
-              }
-            >
-              <Ionicons
-                name="chevron-forward-outline"
-                size={24}
-                color={colors.icon}
-              />
-            </Pressable>
-          </View>
-          <FlatList
-            horizontal
-            data={popularMovies}
-            renderItem={renderShowItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-          />
+        {renderSection(
+          "Trending TV Series",
+          tvSeries,
+          "trending-up",
+          "Trending",
+          "tvSeries",
+          renderShowItem
+        )}
 
-          <View style={[styles.sectionContainer, { marginTop: 15 }]}>
-            <View style={styles.titleContainer}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Popular TV Series
-              </Text>
-              <Ionicons
-                name="heart"
-                size={22}
-                color={colors.icon}
-                opacity={colors.opacity}
-              />
-            </View>
-            <Pressable
-              style={({ pressed }) => [
-                {
-                  opacity: pressed ? 0.5 : colors.opacity,
-                  marginRight: 5,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("PopularList", { type: "tvSeries" })
-              }
-            >
-              <Ionicons
-                name="chevron-forward-outline"
-                size={24}
-                color={colors.icon}
-              />
-            </Pressable>
-          </View>
-          <FlatList
-            horizontal
-            data={popularTVSeries}
-            renderItem={renderShowItem}
-            keyExtractor={(item) => item.id.toString()}
-            showsHorizontalScrollIndicator={false}
-          />
-        </View>
+        {renderSection(
+          "Popular Movies",
+          popularMovies,
+          "local-fire-department",
+          "Popular",
+          "movies",
+          renderShowItem
+        )}
 
-        <SearchModal
-          isVisible={isSearchVisible}
-          onClose={() => setIsSearchVisible(false)}
-        />
+        {renderSection(
+          "Popular TV Series",
+          popularTVSeries,
+          "local-fire-department",
+          "Popular",
+          "tvSeries",
+          renderShowItem
+        )}
       </ScrollView>
-    </>
+
+      <SearchModal
+        isVisible={isSearchVisible}
+        onClose={() => setIsSearchVisible(false)}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: 60,
-  },
   container: {
     flex: 1,
-    padding: 16,
-  },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    marginBottom: 5,
-    justifyContent: "space-around",
   },
   header: {
-    fontSize: 20,
-    textAlign: "center",
-    marginHorizontal: 120,
-    fontWeight: "bold",
-  },
-  divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 5,
-  },
-  title: {
-    fontSize: 24,
-    marginVertical: 16,
-    textAlign: "center",
-    fontWeight: "bold",
-    opacity: 0.87,
-  },
-  banner: {
-    backgroundColor: "#ffeb3b",
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  bannerText: {
-    color: "#000",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  containerMovie: {
-    flex: 1,
-    padding: 16,
-  },
-  movieItem: {
-    flex: 1,
-    marginLeft: 8,
-    alignItems: "center",
-  },
-  movieTitle: {
-    paddingVertical: 10,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  genreButton: {
-    padding: 10,
-    margin: 5,
-    marginRight: 2,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  genreText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  sectionContainer: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
   },
-  titleContainer: {
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  scrollContent: {
+    paddingBottom: Platform.select({
+      ios: 30,
+      android: 100,
+    }),
+    paddingHorizontal: 16,
+  },
+  welcomeContainer: {
+    marginVertical: 20,
+    alignItems: "center",
+  },
+  welcomeText: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: "bold",
+  },
+  section: {
+    marginBottom: 25,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  sectionTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  sectionIcon: {
+    marginRight: 10,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginVertical: 12,
-    marginHorizontal: 8,
+  },
+  genreList: {
+    paddingVertical: 10,
+  },
+  genreButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  genreText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  listContent: {
+    paddingLeft: 5,
+  },
+  movieItem: {
+    marginRight: 15,
+  },
+  posterImage: {
+    width: posterWidth,
+    height: posterHeight,
+    borderRadius: 10,
+  },
+  featuredItem: {
+    width: featuredWidth,
+    marginRight: 15,
+  },
+  featuredImage: {
+    width: featuredWidth,
+    height: featuredHeight,
+    borderRadius: 10,
+  },
+  featuredTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingTop: 8,
+  },
+  emptyState: {
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+  emptyIcon: {
+    opacity: 0.5,
+    marginBottom: 10,
+  },
+  emptyText: {
+    fontSize: 16,
+    opacity: 0.7,
   },
 });
 

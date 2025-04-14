@@ -1,5 +1,11 @@
 // WatchListScreen - Contains screens for movies and tv series
-import React, { useState, useCallback, useContext } from "react";
+import React, {
+  useState,
+  useCallback,
+  useContext,
+  useRef,
+  useEffect,
+} from "react";
 import {
   View,
   Text,
@@ -8,34 +14,52 @@ import {
   StyleSheet,
   Pressable,
   Dimensions,
+  Animated,
+  Easing,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getSavedShows } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
-import { Ionicons } from "react-native-vector-icons";
+import { Ionicons, MaterialIcons } from "react-native-vector-icons";
 import SearchModal from "../components/SearchModal";
 import { ThemeContext } from "../components/ThemeContext";
 import { getTheme } from "../components/theme";
 
-const { width } = Dimensions.get("window"); // Get device width
-
+const { width } = Dimensions.get("window");
 const posterWidth = width * 0.28; // 30% of screen width
 const posterHeight = posterWidth * (16 / 11); // Maintain aspect ratio
+const tabButtonWidth = width * 0.4; // 40% of screen width for each tab
 
 // Memoized list item component to prevent unnecessary re-renders
-const ShowItem = React.memo(({ item, onPress }) => {
+const ShowItem = React.memo(({ item, onPress, animation }) => {
   return (
-    <Pressable style={styles.movieItem} onPress={onPress}>
-      <Image
-        source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
-        style={{
-          width: posterWidth,
-          height: posterHeight,
-          borderRadius: 10,
-          marginRight: 12,
+    <Animated.View style={{ transform: [{ scale: animation }] }}>
+      <Pressable
+        style={styles.movieItem}
+        onPress={onPress}
+        onPressIn={() => {
+          Animated.spring(animation, {
+            toValue: 0.95,
+            friction: 3,
+            useNativeDriver: true,
+          }).start();
         }}
-      />
-    </Pressable>
+        onPressOut={() => {
+          Animated.spring(animation, {
+            toValue: 1,
+            friction: 3,
+            useNativeDriver: true,
+          }).start();
+        }}
+      >
+        <Image
+          source={{ uri: `https://image.tmdb.org/t/p/w500${item.poster_path}` }}
+          style={styles.posterImage}
+        />
+      </Pressable>
+    </Animated.View>
   );
 });
 
@@ -48,22 +72,46 @@ const WatchListScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(20)).current;
+
+  // Start animations when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       const loadSavedShows = async () => {
-        if (firebase_auth.currentUser) {
-          const savedMovies = await getSavedShows(
-            firebase_auth.currentUser.uid,
-            "movies"
-          );
+        const user = firebase_auth.currentUser;
+        if (!user) return;
+
+        try {
+          const [savedMovies, savedSeries] = await Promise.all([
+            getSavedShows(user.uid, "movies"),
+            getSavedShows(user.uid, "tvSeries"),
+          ]);
+
           setMovies(savedMovies);
-          const savedSeries = await getSavedShows(
-            firebase_auth.currentUser.uid,
-            "tvSeries"
-          );
           setTVSeries(savedSeries);
+        } catch (error) {
+          console.error("Failed to load saved shows:", error);
         }
       };
+
       loadSavedShows();
     }, [])
   );
@@ -82,48 +130,81 @@ const WatchListScreen = ({ navigation }) => {
   );
 
   const renderShowItem = useCallback(
-    ({ item }) => (
-      <ShowItem item={item} onPress={() => handleShowDetails(item)} />
-    ),
+    ({ item }) => {
+      const animation = new Animated.Value(1);
+      return (
+        <ShowItem
+          item={item}
+          onPress={() => handleShowDetails(item)}
+          animation={animation}
+        />
+      );
+    },
     [handleShowDetails]
   );
 
   return (
-    <>
-      <View
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
         style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
         ]}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.headerContainer}>
-          <Text
-            style={[
-              styles.header,
-              { color: colors.text, opacity: colors.opacity },
-            ]}
-          >
-            Watchlist
-          </Text>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
-        <View style={{ flexDirection: "row", marginTop: 10, marginBottom: 15 }}>
+      >
+        <Pressable
+          onPress={() => navigation.navigate("Settings")}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}
+        >
+          <Ionicons name="menu" size={28} color="#fff" />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>
+          My Watchlist
+        </Text>
+        <Pressable
+          onPress={() => setIsSearchVisible(true)}
+          style={({ pressed }) => ({
+            opacity: pressed ? 0.5 : 1,
+          })}
+        >
+          <Ionicons name="search" size={24} color="#fff" />
+        </Pressable>
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.contentContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideUpAnim }],
+          },
+        ]}
+      >
+        <View style={styles.tabContainer}>
           <Pressable
             onPress={() => setActiveTab("movies")}
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
-                marginHorizontal: 10,
               },
+              styles.tabButton,
             ]}
           >
             <Text
-              style={{
-                fontSize: 20,
-                color: activeTab === "movies" ? colors.secondary : colors.gray,
-                fontWeight: activeTab === "movies" ? "bold" : "normal",
-              }}
+              style={[
+                {
+                  color:
+                    activeTab === "movies" ? colors.secondary : colors.gray,
+                  fontWeight: activeTab === "movies" ? "bold" : "600",
+                },
+                styles.tabText,
+              ]}
             >
               Movies
             </Text>
@@ -133,34 +214,25 @@ const WatchListScreen = ({ navigation }) => {
             style={({ pressed }) => [
               {
                 opacity: pressed ? 0.5 : 1,
-                marginHorizontal: 10,
               },
+              styles.tabButton,
             ]}
           >
             <Text
-              style={{
-                fontSize: 20,
-                color:
-                  activeTab === "tvSeries" ? colors.secondary : colors.gray,
-                fontWeight: activeTab === "tvSeries" ? "bold" : "normal",
-              }}
+              style={[
+                {
+                  color:
+                    activeTab === "tvSeries" ? colors.secondary : colors.gray,
+                  fontWeight: activeTab === "tvSeries" ? "bold" : "600",
+                },
+                styles.tabText,
+              ]}
             >
               TV Series
             </Text>
           </Pressable>
-          <Pressable
-            onPress={() => setIsSearchVisible(true)}
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-                marginLeft: "auto",
-                marginRight: 10,
-              },
-            ]}
-          >
-            <Ionicons name="search" size={26} color={colors.secondary} />
-          </Pressable>
         </View>
+
         {["Watched", "In Progress", "Plan to Watch"].map((category) => {
           const categoryFilteredShows = (
             activeTab === "movies" ? movies : tvSeries
@@ -170,7 +242,7 @@ const WatchListScreen = ({ navigation }) => {
 
           return (
             <View key={category} style={styles.categoryContainer}>
-              <View style={styles.sectionContainer}>
+              <View style={styles.sectionHeader}>
                 <Text
                   style={[
                     styles.sectionTitle,
@@ -180,12 +252,7 @@ const WatchListScreen = ({ navigation }) => {
                   {category}
                 </Text>
                 <Pressable
-                  style={({ pressed }) => [
-                    {
-                      opacity: pressed ? 0.5 : colors.opacity,
-                      marginRight: 10,
-                    },
-                  ]}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
                   onPress={() => {
                     let screenName = "";
                     switch (category) {
@@ -204,91 +271,125 @@ const WatchListScreen = ({ navigation }) => {
                     navigation.navigate(screenName);
                   }}
                 >
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={20}
-                    color={colors.icon}
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={24}
+                    color={colors.primary}
                   />
                 </Pressable>
               </View>
-              <FlatList
-                horizontal
-                data={categoryFilteredShows}
-                renderItem={renderShowItem}
-                keyExtractor={(item) => item.id.toString()}
-                ListEmptyComponent={
-                  <Text
-                    style={[
-                      styles.text,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
-                    You haven't added any shows yet in this category.
+
+              {categoryFilteredShows.length > 0 ? (
+                <FlatList
+                  horizontal
+                  data={categoryFilteredShows}
+                  renderItem={renderShowItem}
+                  keyExtractor={(item) => item.id.toString()}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.listContent}
+                  initialNumToRender={5} // Render only 5 items initially
+                  windowSize={5} // Reduce the rendering window size
+                  maxToRenderPerBatch={5} // Render 5 items at a time
+                  updateCellsBatchingPeriod={50} // Batch updates every 50ms
+                />
+              ) : (
+                <View style={styles.emptyState}>
+                  <MaterialIcons
+                    name="theaters"
+                    size={40}
+                    color={colors.gray}
+                    style={styles.emptyIcon}
+                  />
+                  <Text style={[styles.emptyText, { color: colors.gray }]}>
+                    No {category.toLowerCase()} shows yet
                   </Text>
-                }
-                showsHorizontalScrollIndicator={false}
-                initialNumToRender={5} // Render only 5 items initially
-                windowSize={5} // Reduce the rendering window size
-                maxToRenderPerBatch={5} // Render 5 items at a time
-                updateCellsBatchingPeriod={50} // Batch updates every 50ms
-              />
+                </View>
+              )}
             </View>
           );
         })}
+      </Animated.View>
 
-        <SearchModal
-          isVisible={isSearchVisible}
-          onClose={() => setIsSearchVisible(false)}
-        />
-      </View>
-    </>
+      <SearchModal
+        isVisible={isSearchVisible}
+        onClose={() => setIsSearchVisible(false)}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: 60,
-  },
   container: {
     flex: 1,
-    padding: 16,
-  },
-  headerContainer: {
-    padding: 5,
-    marginBottom: 5,
-    justifyContent: "center",
   },
   header: {
-    fontSize: 20,
-    textAlign: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
+  },
+  headerTitle: {
+    fontSize: 22,
     fontWeight: "bold",
   },
-  divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 5,
-  },
-  movieItem: {
+  contentContainer: {
     flex: 1,
-    marginTop: 10,
+    paddingHorizontal: 16,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 10,
+    position: "relative",
+  },
+  tabButton: {
+    padding: 10,
+    width: tabButtonWidth,
     alignItems: "center",
   },
-  text: {
-    fontSize: 16,
-    padding: 10,
-    fontWeight: "500",
+  tabText: {
+    fontSize: 20,
   },
   categoryContainer: {
-    flex: 1,
-    paddingLeft: 10,
+    marginBottom: 20,
   },
-  sectionContainer: {
+  sectionHeader: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingHorizontal: 10,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "bold",
+  },
+  listContent: {
+    paddingLeft: 10,
+  },
+  movieItem: {
+    marginRight: 15,
+  },
+  posterImage: {
+    width: posterWidth,
+    height: posterHeight,
+    borderRadius: 10,
+  },
+  emptyState: {
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+  emptyIcon: {
+    opacity: 0.5,
+    marginBottom: 10,
+  },
+  emptyText: {
+    fontSize: 16,
+    opacity: 0.7,
   },
 });
 

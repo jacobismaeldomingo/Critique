@@ -6,6 +6,8 @@ import {
   Alert,
   StyleSheet,
   Pressable,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -107,7 +109,7 @@ const MapScreen = ({ route, navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -163,6 +165,7 @@ const MapScreen = ({ route, navigation }) => {
             <MapView
               ref={mapRef}
               style={styles.map}
+              provider="google"
               initialRegion={{
                 latitude: location.latitude,
                 longitude: location.longitude,
@@ -170,17 +173,17 @@ const MapScreen = ({ route, navigation }) => {
                 longitudeDelta: 0.03,
               }}
             >
-              <Marker
-                coordinate={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                }}
-                title={location.name}
-              >
-                <Ionicons name="film-sharp" size={32} color="#9575CD" />
-              </Marker>
-
-              {selectedLocation && (
+              {!selectedLocation ? (
+                <Marker
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                  }}
+                  title={location.name}
+                >
+                  <Ionicons name="film-sharp" size={32} color="#9575CD" />
+                </Marker>
+              ) : (
                 <Marker
                   coordinate={selectedLocation}
                   title={selectedLocation.title}
@@ -194,13 +197,16 @@ const MapScreen = ({ route, navigation }) => {
           )}
         </View>
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

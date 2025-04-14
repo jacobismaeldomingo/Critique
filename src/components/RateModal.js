@@ -114,7 +114,7 @@ const RateModal = ({ isVisible, onClose, showId, type }) => {
               maxRating={5}
               rating={rating}
               onChange={handleStarPress}
-              size={24}
+              size={28}
               fillColor="#9575CD"
               touchColor="#FFFFFF"
               baseColor={colors.gray}
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "600",
     marginVertical: 10,
   },
@@ -204,14 +204,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    marginLeft: 8,
+    marginLeft: 15,
   },
   ratingInput: {
     textAlign: "center",
-    fontSize: 16,
+    fontSize: 18,
   },
   slashFive: {
-    fontSize: 16,
+    fontSize: 18,
     marginLeft: 5,
   },
   closeButton: {

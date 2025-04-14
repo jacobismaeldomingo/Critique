@@ -1,5 +1,5 @@
 // screens/MovieDetailsScreen.js
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState, useContext, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,10 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Animated,
+  Easing,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Rating } from "@kolking/react-native-rating";
 import {
@@ -39,6 +43,9 @@ import { uploadImageToCloudinary } from "../../services/cloudinary";
 import LoadingItem from "../../components/LoadingItem";
 import { ThemeContext } from "../../components/ThemeContext";
 import { getTheme } from "../../components/theme";
+import { useFocusEffect } from "@react-navigation/native";
+
+const { width } = Dimensions.get("window");
 
 const MovieDetailsScreen = ({ route, navigation }) => {
   const { showId } = route.params;
@@ -60,78 +67,126 @@ const MovieDetailsScreen = ({ route, navigation }) => {
   const [photos, setPhotos] = useState([]);
   const [photoLoading, setPhotoLoading] = useState(false);
 
-  const { width } = Dimensions.get("window"); // Get device width
-
-  const posterWidth = width * 0.3; // 30% of screen width
-  const posterHeight = posterWidth * (3 / 2); // Maintain aspect ratio
-  const castImageWidth = width * 0.22; // 22% of screen width
-  const castImageHeight = castImageWidth * (130 / 90); // Maintain aspect ratio
-  const videoWidth = width * 0.8; // 90% of screen width
-  const videoHeight = videoWidth * (190 / 350); // Maintain 16:9 aspect ratio
-  const singleVideoHeight = width * (9 / 18); // Maintain 18:9 aspect ratio
+  // Measurements
+  const posterWidth = width * 0.3;
+  const posterHeight = posterWidth * (3 / 2);
+  const castImageWidth = width * 0.22;
+  const castImageHeight = castImageWidth * (130 / 90);
+  const videoWidth = width * 0.8;
+  const videoHeight = videoWidth * (190 / 350);
+  const singleVideoHeight = width * (9 / 18);
   const providerSize = width * 0.11;
   const imageHeight = width * (160 / 430);
   const ratingSize = width * 0.05;
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
+  const derivedColors = {
+    cardBackground: theme === "dark" ? colors.details : colors.viewAll,
+  };
 
-  useEffect(() => {
-    const loadMovieDetails = async () => {
-      const movieDetails = await fetchMovieDetails(showId);
-      setMovie(movieDetails);
-      setApiRating((Number(movieDetails.vote_average) / 2).toFixed(2)); // Convert /10 to /5
-      setGenres(movieDetails.genres);
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(20)).current;
+  const tabUnderlineAnim = useRef(new Animated.Value(0)).current;
 
-      const loadProviders = async () => {
-        const providersDetails = await fetchMoviesProviders(showId);
-        setProviders(providersDetails);
-      };
+  useFocusEffect(
+    useCallback(() => {
+      // Entry animations
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideUpAnim, {
+          toValue: 0,
+          duration: 600,
+          easing: Easing.out(Easing.back(1.2)),
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-      const loadCast = async () => {
-        const castDetails = await fetchMovieCast(showId);
-        setCast(castDetails);
-      };
+      // Tab animation
+      Animated.spring(tabUnderlineAnim, {
+        toValue: activeTab === "details" ? 0 : width * 0.5,
+        friction: 6,
+        useNativeDriver: true,
+      }).start();
 
-      const loadVideos = async () => {
-        const videoDetails = await fetchMovieVideos(showId);
-        setVideos(videoDetails);
-      };
+      // Load data
+      const loadMovieDetails = async () => {
+        const movieDetails = await fetchMovieDetails(showId);
+        setMovie(movieDetails);
+        setApiRating((Number(movieDetails.vote_average) / 2).toFixed(2)); // Convert /10 to /5
+        setGenres(movieDetails.genres);
 
-      const loadPhotos = async () => {
-        try {
-          const userId = firebase_auth.currentUser.uid;
-          const photos = await getShowPhotos(userId, showId, "movies");
-          setPhotos(photos);
-        } catch (error) {
-          console.error("Error loading photos:", error);
-          Alert.alert("Error", "Failed to load photos");
+        const loadProviders = async () => {
+          const providersDetails = await fetchMoviesProviders(showId);
+          setProviders(providersDetails);
+        };
+
+        const loadCast = async () => {
+          const castDetails = await fetchMovieCast(showId);
+          setCast(castDetails);
+        };
+
+        const loadVideos = async () => {
+          const videoDetails = await fetchMovieVideos(showId);
+          setVideos(videoDetails);
+        };
+
+        const loadPhotos = async () => {
+          try {
+            const userId = firebase_auth.currentUser.uid;
+            const photos = await getShowPhotos(userId, showId, "movies");
+            setPhotos(photos);
+          } catch (error) {
+            console.error("Error loading photos:", error);
+            Alert.alert("Error", "Failed to load photos");
+          }
+        };
+
+        if (firebase_auth.currentUser) {
+          const savedData = await getMovieData(
+            firebase_auth.currentUser.uid,
+            showId
+          );
+          if (savedData) {
+            setUserReview(savedData.review || "");
+            setCategory(savedData.category || "");
+            setUserRating(savedData.rating || 0);
+            setLocation(savedData.location);
+            setPhotos(savedData.photos || []);
+            setIsAdded(true);
+          }
         }
+
+        loadProviders();
+        loadCast();
+        loadVideos();
+        loadPhotos();
       };
 
-      if (firebase_auth.currentUser) {
-        const savedData = await getMovieData(
-          firebase_auth.currentUser.uid,
-          showId
-        );
-        if (savedData) {
-          setUserReview(savedData.review || "");
-          setCategory(savedData.category || "");
-          setUserRating(savedData.rating || 0);
-          setLocation(savedData.location);
-          setPhotos(savedData.photos || []);
-          setIsAdded(true);
-        }
-      }
+      loadMovieDetails();
+    }, [showId, activeTab])
+  );
 
-      loadProviders();
-      loadCast();
-      loadVideos();
-      loadPhotos();
-    };
-
-    loadMovieDetails();
-  }, [showId]);
+  // Animation for button presses
+  const animatePress = (animation) => {
+    Animated.sequence([
+      Animated.timing(animation, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const generateId = () => {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -167,66 +222,85 @@ const MovieDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const renderProviderItem = ({ item }) => (
-    <Pressable style={styles.providerItem}>
-      <Image
-        source={{ uri: `https://image.tmdb.org/t/p/w200${item.logo_path}` }}
-        style={{
-          width: providerSize,
-          height: providerSize,
-          borderRadius: 12,
-          marginRight: 5,
-        }}
-      />
-    </Pressable>
-  );
+  const renderProviderItem = ({ item }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          onPressIn={() => animatePress(animation)}
+          style={styles.providerItem}
+        >
+          <Image
+            source={{ uri: `https://image.tmdb.org/t/p/w200${item.logo_path}` }}
+            style={{
+              width: providerSize,
+              height: providerSize,
+              borderRadius: 12,
+              marginRight: 5,
+            }}
+          />
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
-  const renderCastItem = ({ item }) => (
-    <Pressable style={styles.castItem}>
-      <Image
-        source={{ uri: `https://image.tmdb.org/t/p/w200${item.profile_path}` }}
-        style={{
-          width: castImageWidth,
-          height: castImageHeight,
-          borderRadius: 8,
-          marginBottom: 5,
-        }}
-      />
-      <Text
-        style={[
-          styles.castName,
-          { color: colors.text, opacity: colors.opacity },
-        ]}
-      >
-        {item.name}
-      </Text>
-      <Text style={[styles.castRole, { color: colors.gray }]}>
-        {item.character || "Unknown Role"}
-      </Text>
-    </Pressable>
-  );
+  const renderCastItem = ({ item }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          onPressIn={() => animatePress(animation)}
+          style={[styles.castItem, { width: castImageWidth }]}
+        >
+          <Image
+            source={{
+              uri: `https://image.tmdb.org/t/p/w200${item.profile_path}`,
+            }}
+            style={{
+              width: castImageWidth,
+              height: castImageHeight,
+              borderRadius: 8,
+              marginBottom: 5,
+            }}
+          />
+          <Text style={[styles.castName, { color: colors.text }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.castRole, { color: colors.gray }]}>
+            {item.character || "Unknown Role"}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
-  const renderVideoItem = ({ item }) => (
-    <View style={styles.videoContainer}>
-      <YoutubePlayer
-        width={videoWidth}
-        height={videoHeight}
-        videoId={item.key} // YouTube video ID
-        play={false} // Autoplay disabled
-        webViewStyle={styles.videoPlayer}
-      />
-      <Text
-        style={[
-          styles.videoTitle,
-          { color: colors.text, opacity: colors.opacity },
-        ]}
-        numberOfLines={1}
-        ellipsizeMode="tail"
-      >
-        {item.name}
-      </Text>
-    </View>
-  );
+  const renderVideoItem = ({ item }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          onPressIn={() => animatePress(animation)}
+          style={styles.videoContainer}
+        >
+          <View style={styles.videoWrapper}>
+            <YoutubePlayer
+              width={videoWidth}
+              height={videoHeight}
+              videoId={item.key}
+              play={false}
+            />
+          </View>
+          <Text
+            style={[styles.videoTitle, { color: colors.text }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {item.name}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   const onPhotoTaken = async (photoUri) => {
     try {
@@ -422,112 +496,119 @@ const MovieDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const renderPhotoItem = ({ item, index }) => (
-    <Pressable
-      style={styles.photoItem}
-      onPress={() => handleViewPhoto(item, index, photos, showId)}
-      onLongPress={() =>
-        Alert.alert("Photo Options", "What would you like to do?", [
-          {
-            text: "Edit Caption",
-            onPress: () => {
-              Alert.prompt(
-                "Edit Caption",
-                "Enter a caption for this photo:",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Save",
-                    onPress: (caption) => handleEditCaption(item.id, caption),
-                  },
-                ],
-                "plain-text",
-                item.caption
-              );
-            },
-          },
-          {
-            text: "Delete",
-            onPress: () => {
-              Alert.alert(
-                "Confirm Delete",
-                "Are you sure you want to delete this photo?",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete",
-                    onPress: () => handleDeletePhoto(item),
-                    style: "destructive",
-                  },
-                ]
-              );
-            },
-            style: "destructive",
-          },
-          { text: "Cancel", style: "cancel" },
-        ])
-      }
-    >
-      <Image
-        source={{ uri: item.imageUrl }}
-        style={{ width: "100%", height: imageHeight, borderRadius: 8 }}
-      />
-      {item.caption ? (
-        <Text style={styles.photoCaption} numberOfLines={1}>
-          {item.caption}
-        </Text>
-      ) : null}
-    </Pressable>
-  );
+  const renderPhotoItem = ({ item, index }) => {
+    const animation = new Animated.Value(1);
+    return (
+      <Animated.View style={{ transform: [{ scale: animation }] }}>
+        <Pressable
+          onPressIn={() => animatePress(animation)}
+          style={styles.photoItem}
+          onPress={() => handleViewPhoto(item, index, photos, showId)}
+          onLongPress={() =>
+            Alert.alert("Photo Options", "What would you like to do?", [
+              {
+                text: "Edit Caption",
+                onPress: () => {
+                  Alert.prompt(
+                    "Edit Caption",
+                    "Enter a caption for this photo:",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Save",
+                        onPress: (caption) =>
+                          handleEditCaption(item.id, caption),
+                      },
+                    ],
+                    "plain-text",
+                    item.caption
+                  );
+                },
+              },
+              {
+                text: "Delete",
+                onPress: () => {
+                  Alert.alert(
+                    "Confirm Delete",
+                    "Are you sure you want to delete this photo?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        onPress: () => handleDeletePhoto(item),
+                        style: "destructive",
+                      },
+                    ]
+                  );
+                },
+                style: "destructive",
+              },
+              { text: "Cancel", style: "cancel" },
+            ])
+          }
+        >
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: "100%", height: imageHeight, borderRadius: 8 }}
+          />
+          {item.caption ? (
+            <Text style={styles.photoCaption} numberOfLines={1}>
+              {item.caption}
+            </Text>
+          ) : null}
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   if (!movie) {
     return <LoadingItem />;
   }
 
   return (
-    <>
-      <View
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      {/* Header - Consistent with other screens */}
+      <Animated.View
         style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
         ]}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.headerContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons
-              name="chevron-back-outline"
-              size={28}
-              color={colors.icon}
-              opacity={colors.opacity}
-            />
-          </Pressable>
-          <View style={styles.headerWrapper}>
-            <Text
-              style={[
-                styles.header,
-                { color: colors.text, opacity: colors.opacity },
-              ]}
-            >
-              Movie Details
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
-        <ScrollView
-          style={styles.scrollView}
-          keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled={true}
-          showsHorizontalScrollIndicator={false}
+      >
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
         >
-          <View style={styles.detailsContainer}>
+          <Ionicons name="chevron-back-outline" size={28} color="#fff" />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>
+          Movie Details
+        </Text>
+        <View style={{ width: 28 }} />
+      </Animated.View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View
+          style={[
+            styles.contentContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            },
+          ]}
+        >
+          <View style={styles.movieHeader}>
             <Image
               source={{
                 uri: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
@@ -535,63 +616,40 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               style={{
                 width: posterWidth,
                 height: posterHeight,
-                borderRadius: 8,
+                borderRadius: 12,
                 marginRight: 16,
               }}
             />
-            <View style={styles.textContainer}>
-              <Text
-                style={[
-                  styles.showTitle,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
+            <View style={styles.movieInfo}>
+              <Text style={[styles.movieTitle, { color: colors.text }]}>
                 {movie.title}
               </Text>
               <View style={styles.ratingContainer}>
                 <Rating
                   maxRating={5}
                   rating={apiRating}
-                  disabled={true} // Viewers rating is read-only
+                  disabled={true}
                   size={ratingSize}
-                  fillColor="#9575CD"
-                  touchColor="#FFFFFF"
+                  fillColor={colors.primary}
                   baseColor={colors.gray}
                 />
-                <Text
-                  style={[
-                    styles.ratingText,
-                    { color: colors.text, opacity: colors.opacity },
-                  ]}
-                >
+                <Text style={[styles.ratingText, { color: colors.text }]}>
                   {apiRating} / 5
                 </Text>
               </View>
-              <Text
-                style={[
-                  styles.genreText,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                {genres.map((genre) => genre.name).join(", ") ||
-                  "No genres available"}
+              <Text style={[styles.genreText, { color: colors.text }]}>
+                {genres.map((g) => g.name).join(", ")}
               </Text>
-              <Text
-                style={[
-                  styles.providers,
-                  {
-                    color: colors.text,
-                    opacity: colors.opacity,
-                  },
-                ]}
-              >
-                Providers
+              <Text style={[styles.providers, { color: colors.text }]}>
+                Where to Watch
               </Text>
               <FlatList
                 horizontal
                 data={providers}
                 renderItem={renderProviderItem}
                 keyExtractor={(item) => item.provider_id.toString()}
+                contentContainerStyle={styles.providersList}
+                showsHorizontalScrollIndicator={false}
                 ListEmptyComponent={
                   <Text
                     style={[
@@ -599,10 +657,9 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                       { color: colors.text, opacity: colors.opacity },
                     ]}
                   >
-                    No providers found for this series.
+                    No providers found for this movie.
                   </Text>
                 }
-                showsHorizontalScrollIndicator={false}
               />
             </View>
           </View>
@@ -613,35 +670,44 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               style={[
                 styles.tabButton,
                 activeTab === "details" && {
-                  backgroundColor: colors.secondary,
+                  borderBottomColor: colors.secondary,
+                  borderBottomWidth: 2,
                 },
-                !isAdded && styles.showAdded,
               ]}
             >
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === "details" && styles.activeTabText,
+                  { color: colors.text },
+                  activeTab === "details" &&
+                    styles.activeTabText && {
+                      color: colors.secondary,
+                    },
+                  ,
                 ]}
               >
                 Details
               </Text>
             </Pressable>
-
             {isAdded && (
               <Pressable
                 onPress={() => setActiveTab("review")}
                 style={[
                   styles.tabButton,
                   activeTab === "review" && {
-                    backgroundColor: colors.secondary,
+                    borderBottomColor: colors.secondary,
+                    borderBottomWidth: 2,
                   },
                 ]}
               >
                 <Text
                   style={[
                     styles.tabText,
-                    activeTab === "review" && styles.activeTabText,
+                    { color: colors.text },
+                    activeTab === "review" &&
+                      styles.activeTabText && {
+                        color: colors.secondary,
+                      },
                   ]}
                 >
                   Review
@@ -650,262 +716,170 @@ const MovieDetailsScreen = ({ route, navigation }) => {
             )}
           </View>
 
-          {activeTab === "details" && (
+          {activeTab === "details" ? (
             <>
-              <Text
-                style={[
-                  styles.label,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Synopsis
               </Text>
-              <View
-                style={[
-                  styles.synopsisContainer,
-                  { borderColor: colors.text, color: colors.text },
-                ]}
-              >
+              <Pressable onPress={() => setExpanded(!expanded)}>
                 <Text style={[styles.synopsis, { color: colors.text }]}>
                   {expanded
                     ? movie.overview
-                    : `${movie.overview.substring(0, 100)}...`}
+                    : `${movie.overview.substring(0, 150)}...`}
                 </Text>
-                <Pressable onPress={() => setExpanded(!expanded)}>
-                  <Text style={[styles.readMore, { color: colors.secondary }]}>
-                    {expanded ? "Read Less" : "Read More..."}
-                  </Text>
-                </Pressable>
-              </View>
+                <Text style={[styles.readMore, { color: colors.primary }]}>
+                  {expanded ? "Read Less" : "Read More"}
+                </Text>
+              </Pressable>
 
-              <View style={styles.castContainer}>
-                <Text
-                  style={[
-                    styles.label,
-                    { color: colors.text, opacity: colors.opacity },
-                  ]}
-                >
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Cast
                 </Text>
                 <Pressable
-                  onPress={() =>
-                    navigation.navigate("FullCastCrew", { cast, showId })
-                  }
+                  onPress={() => navigation.navigate("FullCastCrew", { cast })}
                 >
-                  <Text
-                    style={[styles.nextScreenText, { color: colors.secondary }]}
-                  >
-                    Show All
+                  <Text style={[styles.viewAll, { color: colors.primary }]}>
+                    View All
                   </Text>
                 </Pressable>
               </View>
               <FlatList
                 horizontal
-                data={cast.slice(0, 10)} // Show only the first 10
+                data={cast.slice(0, 10)}
                 renderItem={renderCastItem}
                 keyExtractor={(item) => item.id.toString()}
-                ListEmptyComponent={
-                  <Text
-                    style={[
-                      styles.text,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
-                    No cast found.
-                  </Text>
-                }
+                contentContainerStyle={styles.castList}
                 showsHorizontalScrollIndicator={false}
               />
 
-              <Text
-                style={[
-                  styles.label,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Details
               </Text>
-              <View>
+              <View
+                style={[
+                  styles.detailsCard,
+                  { backgroundColor: derivedColors.cardBackground },
+                ]}
+              >
                 <View
-                  style={[styles.details, { backgroundColor: colors.details }]}
+                  style={[styles.detailRow, { borderBottomColor: colors.gray }]}
                 >
-                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                  <Text style={[styles.detailLabel, { color: colors.gray }]}>
                     Release Date:
                   </Text>
-                  <Text
-                    style={[
-                      styles.detailsText,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
                     {movie.release_date}
                   </Text>
                 </View>
                 <View
-                  style={[styles.details, { backgroundColor: colors.details }]}
+                  style={[styles.detailRow, { borderBottomColor: colors.gray }]}
                 >
-                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
-                    Run Time:
+                  <Text style={[styles.detailLabel, { color: colors.gray }]}>
+                    Runtime:
                   </Text>
-                  <Text
-                    style={[
-                      styles.detailsText,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
                     {Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m
                   </Text>
                 </View>
                 <View
-                  style={[styles.details, { backgroundColor: colors.details }]}
+                  style={[styles.detailRow, { borderBottomColor: colors.gray }]}
                 >
-                  <Text style={[styles.detailsTitle, { color: colors.gray }]}>
+                  <Text style={[styles.detailLabel, { color: colors.gray }]}>
                     Status:
                   </Text>
-                  <Text
-                    style={[
-                      styles.detailsText,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
                     {movie.status}
                   </Text>
                 </View>
               </View>
 
-              {videos && videos.length > 0 && (
-                <View style={{ marginBottom: 20 }}>
+              {videos.length > 0 && (
+                <>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {videos.length === 1 ? "Trailer" : "Videos"}
+                  </Text>
                   {videos.length === 1 ? (
-                    <>
-                      <Text
-                        style={[
-                          styles.label,
-                          { color: colors.text, opacity: colors.opacity },
-                        ]}
-                      >
-                        Trailer
-                      </Text>
-                      <View style={{ alignItems: "center" }}>
+                    <View style={styles.videoContainer}>
+                      <View style={styles.singleVideoWrapper}>
                         <YoutubePlayer
                           width={"100%"}
                           height={singleVideoHeight}
                           videoId={videos[0].key}
                           play={false}
-                          webViewStyle={{ borderRadius: 10 }}
                         />
-                        <Text
-                          style={[
-                            styles.videoTitle,
-                            { color: colors.text, opacity: colors.opacity },
-                          ]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                        >
-                          {videos[0].name}
-                        </Text>
                       </View>
-                    </>
-                  ) : (
-                    <>
                       <Text
-                        style={[
-                          styles.label,
-                          { color: colors.text, opacity: colors.opacity },
-                        ]}
+                        style={[styles.videoTitle, { color: colors.text }]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
                       >
-                        Videos
+                        {videos[0].name}
                       </Text>
-                      <FlatList
-                        horizontal
-                        data={videos}
-                        renderItem={renderVideoItem}
-                        keyExtractor={(item) => item.id.toString()}
-                        ListEmptyComponent={
-                          <Text
-                            style={[
-                              styles.text,
-                              { color: colors.text, opacity: colors.opacity },
-                            ]}
-                          >
-                            No videos available.
-                          </Text>
-                        }
-                        showsHorizontalScrollIndicator={false}
-                      />
-                    </>
+                    </View>
+                  ) : (
+                    <FlatList
+                      horizontal
+                      data={videos}
+                      renderItem={renderVideoItem}
+                      keyExtractor={(item) => item.id.toString()}
+                      showsHorizontalScrollIndicator={false}
+                    />
                   )}
-                </View>
+                </>
               )}
             </>
-          )}
-
-          {activeTab === "review" && isAdded && (
+          ) : (
             <>
-              <Text
-                style={[
-                  styles.label,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 Your Review
               </Text>
               <TextInput
                 style={[
-                  styles.input,
+                  styles.reviewInput,
                   {
-                    backgroundColor: colors.details,
+                    backgroundColor: derivedColors.cardBackground,
                     color: colors.text,
                     borderColor: colors.gray,
                   },
                 ]}
                 placeholder="Write your review..."
+                placeholderTextColor={colors.gray}
                 value={userReview}
                 onChangeText={setUserReview}
-                placeholderTextColor={colors.gray}
+                multiline
               />
-              <Text
-                style={[
-                  styles.label,
-                  { color: colors.text, opacity: colors.opacity },
-                ]}
-              >
-                Images
-              </Text>
-              <View style={styles.photosHeader}>
-                <Text
-                  style={[
-                    styles.photosCount,
-                    { color: colors.text, opacity: colors.opacity },
-                  ]}
-                >
-                  {photos.length} Photos
+
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Photos ({photos.length})
                 </Text>
-                <View style={styles.photoButtonsContainer}>
+                <View style={styles.photoActions}>
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
                       {
-                        opacity: pressed ? 0.7 : 1,
                         backgroundColor: colors.secondary,
+                        opacity: pressed ? 0.6 : 1,
                       },
                     ]}
                     onPress={handleTakePhoto}
                   >
-                    <Ionicons name="camera" size={20} color="white" />
+                    <Ionicons name="camera" size={18} color="#fff" />
                     <Text style={styles.photoButtonText}>Take Photo</Text>
                   </Pressable>
                   <Pressable
                     style={({ pressed }) => [
                       styles.photoButton,
                       {
-                        opacity: pressed ? 0.7 : 1,
-                        marginLeft: 10,
                         backgroundColor: colors.secondary,
+                        opacity: pressed ? 0.6 : 1,
+                        marginLeft: 10,
                       },
                     ]}
                     onPress={handleAddFromGallery}
                   >
-                    <Ionicons name="image" size={20} color="white" />
+                    <Ionicons name="image" size={18} color="#fff" />
                     <Text style={styles.photoButtonText}>Add from Gallery</Text>
                   </Pressable>
                 </View>
@@ -914,21 +888,23 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               {photoLoading ? (
                 <View
                   style={[
-                    styles.loadingContainer,
+                    styles.loadingPhotos,
                     { backgroundColor: colors.details },
                   ]}
                 >
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={{ color: colors.text }}>Saving photo...</Text>
+                  <Text style={[styles.loadingText, { color: colors.text }]}>
+                    Saving photo...
+                  </Text>
                 </View>
               ) : photos.length > 0 ? (
                 <FlatList
                   horizontal
-                  data={photos.slice(0, 10)} // Show only the first 10
+                  data={photos.slice(0, 10)}
                   renderItem={renderPhotoItem}
                   keyExtractor={(item) => item.id}
-                  showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.photosList}
+                  showsHorizontalScrollIndicator={false}
                   ListFooterComponent={
                     <Pressable
                       style={[
@@ -941,19 +917,13 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                       ]}
                       onPress={() =>
                         navigation.navigate("PhotoGallery", {
-                          photos,
-                          showId,
+                          photos: photos,
+                          showId: showId,
                           type: "movies",
                           onAddPhoto: handleTakePhoto,
                           onAddFromGallery: handleAddFromGallery,
                           onViewPhoto: (item, index) =>
-                            handleViewPhoto(
-                              item,
-                              index,
-                              photos,
-                              showId,
-                              handleDeletePhoto
-                            ),
+                            handleViewPhoto(item, index, photos, showId),
                         })
                       }
                     >
@@ -993,14 +963,10 @@ const MovieDetailsScreen = ({ route, navigation }) => {
                   </Text>
                 </View>
               )}
-              <View style={styles.nextScreenContainer}>
-                <Text
-                  style={[
-                    styles.label,
-                    { color: colors.text, opacity: colors.opacity },
-                  ]}
-                >
-                  Maps
+
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Location
                 </Text>
                 <Pressable
                   style={({ pressed }) => [
@@ -1090,276 +1056,229 @@ const MovieDetailsScreen = ({ route, navigation }) => {
               )}
             </>
           )}
-        </ScrollView>
+        </Animated.View>
+      </ScrollView>
 
-        <View
-          style={{
-            borderBottomColor: colors.text,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            marginBottom: -10,
-          }}
-        />
-
+      <Animated.View
+        style={[
+          styles.actionButtons,
+          {
+            backgroundColor: colors.background,
+            opacity: fadeAnim,
+            transform: [{ translateY: slideUpAnim }],
+          },
+        ]}
+      >
         {!isAdded ? (
           <Pressable
             style={({ pressed }) => [
+              styles.primaryButton,
               {
-                opacity: pressed ? 0.5 : 1,
-                backgroundColor: colors.button,
+                backgroundColor: colors.primary,
+                opacity: pressed ? 0.6 : 1,
               },
-              styles.button,
             ]}
             onPress={() => setCategoryVisible(true)}
           >
-            <Text style={styles.buttonText}>Add to List</Text>
+            <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
           </Pressable>
         ) : (
-          <View style={styles.buttonContainer}>
+          <View style={styles.buttonGroup}>
             <Pressable
               style={({ pressed }) => [
+                styles.secondaryButton,
                 {
-                  opacity: pressed ? 0.5 : 1,
-                  backgroundColor: colors.button,
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.6 : 1,
                 },
-                styles.button,
               ]}
               onPress={handleSaveMovie}
             >
-              <Text style={styles.buttonText}>Update Details</Text>
+              <Text style={[styles.secondaryButtonText]}>Save Changes</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [
+                styles.ratingButton,
                 {
-                  opacity: pressed ? 0.5 : 1,
-                  backgroundColor: colors.button,
+                  backgroundColor: colors.primary,
+                  opacity: pressed ? 0.6 : 1,
                 },
-                styles.starButton,
               ]}
               onPress={() => setRateVisible(true)}
             >
-              <Ionicons name="star-outline" size={28} color="white" />
+              <Ionicons name="star" size={20} color="#fff" />
             </Pressable>
           </View>
         )}
+      </Animated.View>
 
-        <CategoryModal
-          isVisible={categoryVisible}
-          onClose={() => setCategoryVisible(false)}
-          show={movie}
-          type="movies"
-          setIsAdded={setIsAdded}
-        />
-        <RateModal
-          isVisible={rateVisible}
-          onClose={() => setRateVisible(false)}
-          showId={showId}
-          type="movies"
-        />
-      </View>
-    </>
+      {/* Modals */}
+      <CategoryModal
+        isVisible={categoryVisible}
+        onClose={() => setCategoryVisible(false)}
+        show={movie}
+        type="movies"
+        setIsAdded={setIsAdded}
+      />
+      <RateModal
+        isVisible={rateVisible}
+        onClose={() => setRateVisible(false)}
+        showId={showId}
+        type="movies"
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: 60,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   container: {
     flex: 1,
-    padding: 16,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 5,
-  },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  headerWrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
   },
   header: {
-    fontSize: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
+  },
+  headerTitle: {
+    fontSize: 22,
     fontWeight: "bold",
   },
-  divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 5,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  detailsContainer: {
+  scrollContent: {
+    paddingBottom: 100,
+    paddingHorizontal: 16,
+  },
+  contentContainer: {
+    paddingBottom: 20,
+  },
+  movieHeader: {
     flexDirection: "row",
-    marginBottom: 5,
-    alignItems: "flex-start",
+    marginTop: 20,
   },
-  textContainer: {
+  movieInfo: {
     flex: 1,
   },
-  showTitle: {
-    fontSize: 24,
-    marginBottom: 5,
+  movieTitle: {
+    fontSize: 25,
     fontWeight: "bold",
-  },
-  synopsis: {
-    fontSize: 15,
-  },
-  readMore: {
-    marginTop: 5,
-  },
-  input: {
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 5,
-    borderWidth: 1,
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 100,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 16,
-    marginBottom: 10,
-    justifyContent: "center",
-  },
-  starButton: {
-    padding: 12,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    marginBottom: 8,
   },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 5,
-  },
-  label: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginVertical: 10,
+    marginBottom: 10,
   },
   ratingText: {
     fontSize: 16,
-    marginLeft: 10,
+    marginLeft: 8,
   },
-  synopsisContainer: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+  genreText: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 10,
   },
-  providerItem: {
+  providers: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  viewAll: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  providersList: {
+    paddingBottom: 16,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+    position: "relative",
+  },
+  tabButton: {
     flex: 1,
+    paddingVertical: 12,
     alignItems: "center",
   },
+  tabText: {
+    fontSize: 18,
+    fontWeight: "500",
+  },
+  activeTabText: {
+    fontWeight: "bold",
+  },
+  synopsis: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  readMore: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 20,
+  },
+  castList: {
+    paddingBottom: 16,
+  },
   castItem: {
-    width: 100,
     alignItems: "center",
     marginRight: 10,
   },
   castName: {
     fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 2,
-    width: "100%",
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
+    fontWeight: "500",
+    marginTop: 4,
   },
   castRole: {
     fontSize: 12,
-    textAlign: "center",
-    width: "100%",
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
   },
-  castContainer: {
+  detailsCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    marginBottom: 8,
+    borderBottomWidth: 1,
   },
-  nextScreenContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  detailLabel: {
+    fontSize: 18,
+    paddingBottom: 8,
   },
-  nextScreenText: {
+  detailValue: {
+    fontSize: 18,
     fontWeight: "500",
-    marginTop: 5,
-    fontSize: 14,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 10,
-    backgroundColor: "#9E9E9E",
-    borderRadius: 10,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 5,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabText: {
-    fontSize: 18,
-    color: "#FFFFFF",
-    textAlign: "center",
-  },
-  activeTabText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-  },
-  showAdded: {
-    paddingHorizontal: 150,
-    width: "100%",
-  },
-  genreText: {
-    marginTop: 5,
-    fontSize: 15,
-  },
-  providers: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 10,
-  },
-  text: {
-    margin: 5,
-    fontSize: 15,
-  },
-  details: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 5,
-  },
-  detailsTitle: {
-    fontSize: 18,
-  },
-  detailsText: {
-    fontSize: 18,
   },
   videoContainer: {
     marginBottom: 16,
+  },
+  videoWrapper: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginRight: 10,
+  },
+  singleVideoWrapper: {
+    borderRadius: 12,
+    overflow: "hidden",
   },
   videoTitle: {
     fontSize: 18,
@@ -1370,9 +1289,116 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     width: 340,
   },
-  videoPlayer: {
-    borderRadius: 10,
+  videosList: {
+    paddingBottom: 16,
+  },
+  text: {
+    margin: 5,
+    fontSize: 15,
+  },
+  reviewInput: {
+    minHeight: 75,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    lineHeight: 20,
+    textAlignVertical: "top",
+  },
+  photoActions: {
+    flexDirection: "row",
+  },
+  photoButton: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  photoButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  loadingPhotos: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  loadingText: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  photoItem: {
+    width: 130,
+    height: 160,
     marginRight: 10,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#f0f0f0",
+    position: "relative",
+  },
+  photosList: {
+    paddingBottom: 16,
+  },
+  photoCaption: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    color: "#fff",
+    fontSize: 12,
+    padding: 4,
+    textAlign: "center",
+  },
+  viewAllPhotos: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  viewAllText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  emptyPhotos: {
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: "center",
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "500",
+    marginTop: 10,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 5,
+  },
+  mapButton: {
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  mapButtonText: {
+    color: "#FFFFFF",
+    marginLeft: 5,
+    fontWeight: "500",
   },
   locationContainer: {
     marginBottom: 20,
@@ -1396,102 +1422,49 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  mapButton: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  mapButtonText: {
-    color: "#FFFFFF",
-    marginLeft: 5,
-    fontWeight: "500",
-  },
-  photosHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  photosCount: {
-    fontSize: 16,
-  },
-  photoButtonsContainer: {
-    flexDirection: "row",
-  },
-  photoButton: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  photoButtonText: {
-    color: "#FFFFFF",
-    marginLeft: 5,
-    fontWeight: "500",
-  },
-  photosList: {
-    padding: 4,
-  },
-  photoItem: {
-    width: 120,
-    height: 160,
-    marginRight: 10,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#f0f0f0",
-    position: "relative",
-  },
-  photo: {
-    width: "100%",
-    height: 160,
-    borderRadius: 8,
-  },
-  photoCaption: {
-    fontSize: 12,
-    padding: 4,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    color: "#FFFFFF",
+  actionButtons: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    textAlign: "center",
+    padding: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#ccc",
   },
-  viewAllPhotos: {
-    justifyContent: "center",
+  primaryButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    borderWidth: 1,
   },
-  viewAllText: {
+  primaryButtonText: {
+    color: "#fff",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
-  emptyContainer: {
-    padding: 20,
+  buttonGroup: {
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 8,
-    marginBottom: 20,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginTop: 10,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 5,
-  },
-  loadingContainer: {
-    padding: 20,
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  ratingButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: "center",
-    borderRadius: 8,
-    marginBottom: 20,
+    alignItems: "center",
   },
 });
 

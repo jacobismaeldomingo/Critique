@@ -9,6 +9,8 @@ import {
   Pressable,
   TextInput,
   Dimensions,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { getSavedShows } from "../../services/firestore";
@@ -118,7 +120,7 @@ const InProgressListScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -217,13 +219,16 @@ const InProgressListScreen = ({ navigation }) => {
           }
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

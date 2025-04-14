@@ -16,8 +16,9 @@ import {
   Alert,
   Animated,
   Easing,
-  Image,
   Dimensions,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { firebase_auth, db } from "../../firebaseConfig.js";
 import {
@@ -36,7 +37,7 @@ import GenreModal from "../components/GenreModal.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Ionicons,
-  MaterialIcons,
+  MaterialCommunityIcons,
   FontAwesome,
 } from "react-native-vector-icons";
 import { ThemeContext } from "../components/ThemeContext";
@@ -279,7 +280,11 @@ const ProfileScreen = ({ navigation }) => {
           ]}
         >
           <View style={styles.fieldIcon}>
-            <MaterialIcons name={iconName} size={22} color={colors.icon} />
+            <MaterialCommunityIcons
+              name={iconName}
+              size={25}
+              color={colors.icon}
+            />
           </View>
           <View style={styles.fieldContent}>
             <Text style={[styles.fieldLabel, { color: colors.subtitle }]}>
@@ -340,8 +345,14 @@ const ProfileScreen = ({ navigation }) => {
           },
         ]}
       >
-        <MaterialIcons name={iconName} size={24} color={colors.primary} />
-        <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+        <MaterialCommunityIcons
+          name={iconName}
+          size={26}
+          color={colors.primary}
+        />
+        <Text style={[styles.statValue, { color: colors.text }]}>
+          {value.toString()}
+        </Text>
         <Text style={[styles.statLabel, { color: colors.subtitle }]}>
           {title}
         </Text>
@@ -355,8 +366,9 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <Animated.View
         style={[
           styles.header,
@@ -370,11 +382,10 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="menu" size={28} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, { color: "#fff" }]}>Profile</Text>
-        <View style={{ width: 28 }} /> {/* Spacer for alignment */}
+        <View style={{ width: 28 }} />
       </Animated.View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Profile Picture and Edit Button */}
         <Animated.View
           style={[
             styles.profileHeader,
@@ -388,7 +399,7 @@ const ProfileScreen = ({ navigation }) => {
             <Pressable
               onPressIn={animateButtonPress}
               onPress={handleEditButton}
-              style={[styles.editButton, { backgroundColor: colors.primary }]}
+              style={[styles.editButton, { backgroundColor: colors.secondary }]}
             >
               <Text style={styles.editButtonText}>
                 {isEditing ? "Cancel" : "Edit Profile"}
@@ -397,11 +408,10 @@ const ProfileScreen = ({ navigation }) => {
           </Animated.View>
         </Animated.View>
 
-        {/* Profile Fields */}
         {renderProfileField(
           "Username",
           username,
-          "person-outline",
+          "account-outline",
           "username",
           true,
           (text) => {
@@ -412,14 +422,14 @@ const ProfileScreen = ({ navigation }) => {
           "default"
         )}
 
-        {renderProfileField("Email", email, "email", "email")}
+        {renderProfileField("Email", email, "email-outline", "email")}
 
         {isEditing ? (
           <>
             {renderProfileField(
               "Phone",
               phoneNumber,
-              "phone",
+              "phone-outline",
               "phoneNumber",
               true,
               (text) => {
@@ -444,7 +454,7 @@ const ProfileScreen = ({ navigation }) => {
             {renderProfileField(
               "Birthday",
               birthday,
-              "cake",
+              "cake-variant-outline",
               "birthday",
               true,
               (text) => {
@@ -467,7 +477,6 @@ const ProfileScreen = ({ navigation }) => {
               "numeric"
             )}
 
-            {/* Display general errors */}
             {errors.general && (
               <Text
                 style={[
@@ -483,12 +492,14 @@ const ProfileScreen = ({ navigation }) => {
               </Text>
             )}
 
-            {/* Save Button */}
             <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
               <Pressable
                 onPressIn={animateButtonPress}
                 onPress={handleSave}
-                style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.saveButton,
+                  { backgroundColor: colors.secondary },
+                ]}
               >
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               </Pressable>
@@ -496,12 +507,21 @@ const ProfileScreen = ({ navigation }) => {
           </>
         ) : (
           <>
-            {renderProfileField("Phone", phoneNumber, "phone", "phoneNumber")}
-            {renderProfileField("Birthday", birthday, "cake", "birthday")}
+            {renderProfileField(
+              "Phone",
+              phoneNumber,
+              "phone-outline",
+              "phoneNumber"
+            )}
+            {renderProfileField(
+              "Birthday",
+              birthday,
+              "cake-variant-outline",
+              "birthday"
+            )}
           </>
         )}
 
-        {/* Favorite Genres */}
         <Animated.View
           style={[
             styles.sectionContainer,
@@ -519,7 +539,11 @@ const ProfileScreen = ({ navigation }) => {
               onPress={() => setIsGenreModalVisible(true)}
               style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             >
-              <FontAwesome name="edit" size={20} color={colors.primary} />
+              <MaterialCommunityIcons
+                name="movie-open-plus-outline"
+                size={25}
+                color={colors.primary}
+              />
             </Pressable>
           </View>
 
@@ -543,7 +567,6 @@ const ProfileScreen = ({ navigation }) => {
           )}
         </Animated.View>
 
-        {/* Stats Section */}
         <Animated.View
           style={[
             styles.sectionContainer,
@@ -557,13 +580,12 @@ const ProfileScreen = ({ navigation }) => {
             Your Stats
           </Text>
           <View style={styles.statsContainer}>
-            {renderStatCard("Movies", movies, "local-movies")}
-            {renderStatCard("TV Shows", series, "tv")}
+            {renderStatCard("Movies", movies, "filmstrip")}
+            {renderStatCard("TV Shows", series, "television")}
           </View>
         </Animated.View>
       </ScrollView>
 
-      {/* Genre Modal */}
       <GenreModal
         isVisible={isGenreModalVisible}
         onClose={() => setIsGenreModalVisible(false)}
@@ -571,7 +593,7 @@ const ProfileScreen = ({ navigation }) => {
           setSelectedGenres(updatedGenres);
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -580,15 +602,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: Platform.select({
+      ios: 30,
+      android: 100,
+    }),
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 20,
-    paddingTop: 60,
     paddingBottom: 10,
+    paddingTop: 20,
   },
   headerTitle: {
     fontSize: 22,
@@ -601,24 +626,6 @@ const styles = StyleSheet.create({
   avatarContainer: {
     position: "relative",
     marginBottom: 15,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: "#7850bf",
-  },
-  editAvatarButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#7850bf",
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
   },
   editButton: {
     paddingVertical: 12,
@@ -661,12 +668,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 2,
     opacity: 0.8,
   },
   fieldValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "500",
   },
   fieldInput: {
@@ -687,7 +694,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
   },
   genreChipsContainer: {
@@ -702,11 +709,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   genreChipText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#fff",
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 15,
     fontStyle: "italic",
     textAlign: "center",
     marginVertical: 10,
@@ -729,7 +736,7 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 16,
   },
   errorText: {
     fontSize: 12,

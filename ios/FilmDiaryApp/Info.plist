@@ -36,6 +36,12 @@
           <string>com.googleusercontent.apps.542453473907-5tlr2aif8kopft2q0bn11p4be0ile9u8</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+filmdiaryapp</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>

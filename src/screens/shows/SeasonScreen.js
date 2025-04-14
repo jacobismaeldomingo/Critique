@@ -1,5 +1,17 @@
-import React, { useState, useEffect, useContext } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
+import React, { useState, useEffect, useContext, useRef } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Animated,
+  Image,
+  Dimensions,
+  Easing,
+  Platform,
+  SafeAreaView,
+} from "react-native";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { fetchSeason } from "../../services/tmdb";
 import { Ionicons } from "react-native-vector-icons";
@@ -12,8 +24,10 @@ import {
 import { ThemeContext } from "../../components/ThemeContext";
 import { getTheme } from "../../components/theme";
 
+const { width } = Dimensions.get("window");
+
 const SeasonScreen = ({ route, navigation }) => {
-  const { seriesId, seasonNumber, watchedEpisodes } = route.params;
+  const { seriesId, seasonNumber, name, watchedEpisodes } = route.params;
   const [season, setSeason] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [watched, setWatched] = useState(new Set(watchedEpisodes || []));
@@ -23,14 +37,35 @@ const SeasonScreen = ({ route, navigation }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(20)).current;
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
-    const loadSeason = async () => {
+    const loadData = async () => {
+      // Start animations
+      fadeAnim.setValue(0);
+      slideUpAnim.setValue(20);
+
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideUpAnim, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.out(Easing.exp),
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       const seasonDetails = await fetchSeason(seriesId, seasonNumber);
       setSeason(seasonDetails);
       setEpisodes(seasonDetails.episodes);
-    };
 
-    const loadWatchedEpisodes = async () => {
       try {
         const userId = firebase_auth.currentUser.uid;
         const savedWatchedEpisodes = await getWatchedEpisodes(userId, seriesId);
@@ -42,8 +77,7 @@ const SeasonScreen = ({ route, navigation }) => {
       }
     };
 
-    loadSeason();
-    loadWatchedEpisodes();
+    loadData();
   }, [seriesId, seasonNumber]);
 
   // Save watched episodes to Firestore when the watched state changes
@@ -60,6 +94,22 @@ const SeasonScreen = ({ route, navigation }) => {
 
     saveEpisodesToFirestore();
   }, [watched, seriesId, seasonNumber]);
+
+  // Animation for button presses
+  const animatePress = (animation) => {
+    Animated.sequence([
+      Animated.timing(animation, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   // Function to toggle the watched state for a single episode
   const toggleWatched = (episodeNumber) => {
@@ -89,19 +139,128 @@ const SeasonScreen = ({ route, navigation }) => {
     }));
   };
 
+  const renderEpisodeItem = ({ item }) => {
+    const animation = new Animated.Value(1);
+
+    return (
+      <Animated.View
+        style={{
+          backgroundColor: watched.has(item.episode_number)
+            ? colors.episode
+            : colors.details,
+          transform: [{ scale: scaleValue }],
+          opacity: fadeAnim,
+          borderRadius: 10,
+          marginBottom: 10,
+        }}
+      >
+        <Pressable
+          onPressIn={() => animatePress(animation)}
+          style={styles.episodeContainer}
+        >
+          <View style={styles.episodeHeader}>
+            <View style={styles.episodeSection}>
+              <Text style={[styles.episodeNumber, { color: colors.primary }]}>
+                Episode {item.episode_number}
+              </Text>
+              <View style={styles.episodeTitleContainer}>
+                <Text
+                  style={[
+                    styles.episodeTitle,
+                    { color: colors.text, opacity: colors.opacity },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {item.name}
+                </Text>
+              </View>
+            </View>
+            <BouncyCheckbox
+              isChecked={watched.has(item.episode_number)}
+              onPress={() => toggleWatched(item.episode_number)}
+              fillColor={colors.primary}
+              unfillColor={colors.input}
+              innerIconStyle={{ borderRadius: 50 }}
+              iconStyle={{ borderRadius: 50 }}
+              style={styles.checkbox}
+            />
+          </View>
+
+          <View style={styles.episodeDetails}>
+            <Text
+              style={[
+                styles.detailText,
+                { color: colors.gray, opacity: colors.opacity },
+              ]}
+            >
+              {item.air_date} • {item.runtime} mins
+            </Text>
+          </View>
+
+          {item.still_path && (
+            <Image
+              source={{
+                uri: `https://image.tmdb.org/t/p/w500${item.still_path}`,
+              }}
+              style={[styles.episodeImage, { borderColor: colors.itemBorder }]}
+              resizeMode="cover"
+            />
+          )}
+
+          {item.overview && (
+            <View style={styles.overviewContainer}>
+              <Text
+                style={[
+                  styles.overview,
+                  { color: colors.text, opacity: colors.opacity },
+                ]}
+                numberOfLines={expandedEpisodes[item.id] ? undefined : 3}
+              >
+                {item.overview}
+              </Text>
+              {item.overview.length > 150 && (
+                <Pressable
+                  onPress={() => toggleEpisodeExpanded(item.id)}
+                  style={styles.readMoreButton}
+                >
+                  <Text style={[styles.readMore, { color: colors.primary }]}>
+                    {expandedEpisodes[item.id] ? "Show Less" : "Read More"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </Pressable>
+      </Animated.View>
+    );
+  };
+
   if (!season) {
     return <LoadingItem />;
   }
 
   return (
-    <>
-      <View
+    <SafeAreaView style={{ flex: 1 }}>
+      <Animated.View
         style={[
           styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+            transform: [{ translateY: slideUpAnim }],
+          },
         ]}
       />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background,
+            opacity: fadeAnim,
+            transform: [{ translateY: slideUpAnim }],
+          },
+        ]}
+      >
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -125,184 +284,125 @@ const SeasonScreen = ({ route, navigation }) => {
                 { color: colors.text, opacity: colors.opacity },
               ]}
             >
-              Season Episode Details
+              {name}
             </Text>
           </View>
         </View>
         <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
-        <View style={{ marginBottom: 10 }}>
-          <View style={styles.seasonCheckboxContainer}>
-            <Text
-              style={[
-                styles.title,
-                { color: colors.text, opacity: colors.opacity },
-              ]}
-            >
-              Season {seasonNumber}
-            </Text>
-            <BouncyCheckbox
-              isChecked={watched.size === episodes.length}
-              onPress={toggleSeasonWatched}
-              fillColor={colors.primary}
-              unfillColor={colors.input}
-              innerIconStyle={{ borderRadius: 50 }}
-              iconStyle={{ borderRadius: 50 }}
-              style={{ marginRight: -5, marginBottom: 10 }}
+
+        <Animated.View
+          style={[
+            styles.seasonHeader,
+            { opacity: fadeAnim, transform: [{ translateY: slideUpAnim }] },
+          ]}
+        >
+          {season.poster_path && (
+            <Image
+              source={{
+                uri: `https://image.tmdb.org/t/p/w500${season.poster_path}`,
+              }}
+              style={[styles.seasonPoster, { borderColor: colors.itemBorder }]}
+              resizeMode="cover"
             />
-          </View>
-          <View style={styles.episodeDetails}>
+          )}
+
+          <View style={styles.seasonInfo}>
+            <View style={styles.seasonActions}>
+              <Text style={[styles.seasonTitle, { color: colors.text }]}>
+                Season {seasonNumber}
+              </Text>
+              <BouncyCheckbox
+                isChecked={watched.size === episodes.length}
+                onPress={toggleSeasonWatched}
+                fillColor={colors.primary}
+                unfillColor={colors.input}
+                innerIconStyle={{ borderRadius: 50 }}
+                iconStyle={{ borderRadius: 50 }}
+                style={styles.seasonCheckbox}
+              />
+            </View>
+
             <Text
               style={[
                 styles.detailText,
-                { color: colors.grey, opacity: colors.opacity },
+                { color: colors.gray, opacity: colors.opacity },
               ]}
             >
-              Average Rating: {season.vote_average} / 10
+              {season.air_date} • {episodes.length} episodes
             </Text>
-          </View>
-          <View
-            style={[
-              styles.synopsisContainer,
-              { borderColor: colors.text, color: colors.text },
-            ]}
-          >
-            <Text
-              style={[
-                styles.synopsis,
-                { color: colors.text, opacity: colors.opacity },
-              ]}
-            >
-              {expandedSeason
-                ? season.overview
-                : `${season.overview?.substring(0, 100)}...`}
-            </Text>
-            <Pressable onPress={() => setExpandedSeason(!expandedSeason)}>
-              <Text style={[styles.readMore, { color: colors.secondary }]}>
-                {expandedSeason ? "Read Less" : "Read More..."}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-        <Text
-          style={[
-            styles.title,
-            { color: colors.text, opacity: colors.opacity },
-          ]}
-        >
-          Episodes:
-        </Text>
-        <FlatList
-          data={episodes}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View
-              style={[
-                styles.episodeContainer,
-                {
-                  backgroundColor: watched.has(item.episode_number)
-                    ? colors.episode
-                    : colors.details,
-                },
-              ]}
-            >
-              <View
+
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={20} color={colors.primary} />
+              <Text
                 style={[
-                  styles.titleContainer,
-                  { backgroundColor: colors.detailText },
+                  styles.ratingText,
+                  { color: colors.text, opacity: colors.opacity },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.episodeTitle,
-                    { borderColor: colors.text, color: colors.text },
-                  ]}
-                >
-                  {item.name}
-                </Text>
-                <BouncyCheckbox
-                  isChecked={watched.has(item.episode_number)}
-                  onPress={() => toggleWatched(item.episode_number)}
-                  fillColor={colors.primary}
-                  unfillColor={colors.input}
-                  innerIconStyle={{ borderRadius: 50 }}
-                  iconStyle={{
-                    borderRadius: 50,
-                  }}
-                  style={{ marginRight: -15 }}
-                />
-              </View>
-              <View style={styles.episodeDetails}>
-                <Text
-                  style={[
-                    styles.detailText,
-                    { color: colors.gray, opacity: colors.opacity },
-                  ]}
-                >
-                  S{seasonNumber} E{item.episode_number}
-                </Text>
-                <Text
-                  style={[
-                    styles.detailText,
-                    { color: colors.gray, opacity: colors.opacity },
-                  ]}
-                >
-                  {" "}
-                  • {item.runtime} mins
-                </Text>
-              </View>
-              {item.overview?.length > 100 ? (
-                <>
-                  <Text
-                    style={[
-                      styles.overview,
-                      { color: colors.text, opacity: colors.opacity },
-                    ]}
-                  >
-                    {expandedEpisodes[item.id]
-                      ? item.overview
-                      : `${item.overview?.substring(0, 100)}...`}
-                  </Text>
-                  <Pressable onPress={() => toggleEpisodeExpanded(item.id)}>
-                    <Text
-                      style={[
-                        styles.readMore,
-                        {
-                          color: colors.secondary,
-                        },
-                      ]}
-                    >
-                      {expandedEpisodes[item.id] ? "Read Less" : "Read More..."}
-                    </Text>
-                  </Pressable>
-                </>
-              ) : (
+                {season.vote_average?.toFixed(1)} / 10
+              </Text>
+            </View>
+
+            {season.overview && (
+              <View style={styles.overviewContainer}>
                 <Text
                   style={[
                     styles.overview,
                     { color: colors.text, opacity: colors.opacity },
                   ]}
+                  numberOfLines={expandedSeason ? undefined : 3}
                 >
-                  {item.overview}
+                  {season.overview}
                 </Text>
-              )}
-            </View>
-          )}
+                <Pressable
+                  onPress={() => setExpandedSeason(!expandedSeason)}
+                  style={styles.readMoreButton}
+                >
+                  <Text style={[styles.readMore, { color: colors.primary }]}>
+                    {expandedSeason ? "Show Less" : "Read More"}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </Animated.View>
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              color: colors.text,
+              opacity: colors.opacity,
+              backgroundColor: colors.background,
+            },
+          ]}
+        >
+          Episodes
+        </Text>
+
+        <FlatList
+          data={episodes}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderEpisodeItem}
+          contentContainerStyle={styles.episodesList}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={<View style={styles.footer} />}
         />
-      </View>
-    </>
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
-    backgroundColor: "#7850bf",
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
   },
   headerContainer: {
     padding: 5,
@@ -321,77 +421,113 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   divider: {
-    borderBottomColor: "#9E9E9E",
     borderBottomWidth: StyleSheet.hairlineWidth,
     marginBottom: 10,
   },
-  loading: {
+  seasonHeader: {
+    flexDirection: "row",
+    marginBottom: 20,
+  },
+  seasonPoster: {
+    width: width * 0.3,
+    height: width * 0.45,
+    borderRadius: 8,
+    marginRight: 16,
+    borderWidth: 1,
+  },
+  seasonInfo: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: "#000",
+  seasonActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
-  title: {
+  seasonTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginRight: 10,
   },
-  seasonCheckboxContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  seasonCheckbox: {
+    marginRight: -5,
   },
-  titleContainer: {
+  ratingContainer: {
     flexDirection: "row",
-    marginBottom: 5,
-    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  ratingText: {
+    fontSize: 16,
+    marginLeft: 5,
+    alignSelf: "center",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  episodesList: {
+    paddingBottom: 20,
   },
   episodeContainer: {
-    borderRadius: 10,
-    marginBottom: 10,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderRadius: 12,
+    marginBottom: 16,
+    padding: 16,
   },
-  episodeDetails: {
+  episodeHeader: {
     flexDirection: "row",
-    marginBottom: 10,
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  episodeSection: {
+    marginBottom: 5,
+  },
+  episodeNumber: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  episodeTitleContainer: {
+    marginRight: 12,
   },
   episodeTitle: {
     fontSize: 18,
-    fontWeight: "500",
-    flex: 1,
-    flexWrap: "wrap",
-    marginRight: 10,
+    fontWeight: "600",
   },
-  overview: {
-    fontSize: 18,
-    flexWrap: "wrap",
+  checkbox: {
+    marginRight: -5,
+  },
+  episodeDetails: {
+    marginBottom: 12,
   },
   detailText: {
     fontSize: 16,
   },
-  poster: {
-    width: 380,
-    height: 200,
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  synopsisContainer: {
+  episodeImage: {
+    width: "100%",
+    height: width * 0.5,
+    borderRadius: 8,
+    marginBottom: 12,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
   },
-  synopsis: {
-    fontSize: 15,
+  overviewContainer: {
+    marginBottom: 4,
+  },
+  overview: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  readMoreButton: {
+    alignSelf: "flex-start",
+    marginTop: 4,
   },
   readMore: {
-    marginTop: 5,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  footer: {
+    height: 20,
   },
 });
 

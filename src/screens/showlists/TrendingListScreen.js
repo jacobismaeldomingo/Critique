@@ -9,6 +9,8 @@ import {
   ImageBackground,
   ActivityIndicator,
   Dimensions,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import {
@@ -115,7 +117,7 @@ const TrendingListScreen = ({ route }) => {
   );
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -164,15 +166,18 @@ const TrendingListScreen = ({ route }) => {
           }
         />
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
-    backgroundColor: "#7850bf",
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
+
   container: {
     flex: 1,
     padding: 16,

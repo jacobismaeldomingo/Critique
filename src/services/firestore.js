@@ -101,7 +101,7 @@ export const saveWatchLocation = async (userId, showId, type, location) => {
       { merge: true }
     );
 
-    console.log("Location saved successfully:");
+    console.log("Location saved successfully!");
   } catch (error) {
     console.error("Error saving location:", error);
   }

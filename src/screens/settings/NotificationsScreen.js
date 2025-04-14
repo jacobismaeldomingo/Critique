@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import {
@@ -16,11 +18,17 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db, firebase_auth } from "../../../firebaseConfig";
+import * as Notifications from "expo-notifications";
+import { ThemeContext } from "../../components/ThemeContext";
+import { getTheme } from "../../components/theme";
 
 const NotificationsScreen = ({ navigation }) => {
   const { user } = firebase_auth.currentUser;
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { theme } = useContext(ThemeContext);
+  const colors = getTheme(theme);
 
   useEffect(() => {
     if (!user) return;
@@ -82,10 +90,26 @@ const NotificationsScreen = ({ navigation }) => {
     </View>
   );
 
+  const triggerTestNotification = async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Test Notification",
+        body: "This is a test notification sent from your app!",
+        data: { screen: "Profile" }, // Optional data to handle navigation
+      },
+      trigger: { seconds: 1 }, // Show after 1 second
+    });
+  };
+
   return (
-    <>
-      <View style={styles.upperContainer} />
-      <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View
+        style={[
+          styles.upperContainer,
+          { backgroundColor: colors.headerBackground },
+        ]}
+      />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.headerContainer}>
           <Pressable
             style={({ pressed }) => [
@@ -98,20 +122,23 @@ const NotificationsScreen = ({ navigation }) => {
             <Ionicons
               name="chevron-back-outline"
               size={28}
-              color="black"
+              color={colors.icon}
               style={{ marginRight: 50 }}
+              opacity={colors.opacity}
             />
           </Pressable>
           <View style={styles.headerWrapper}>
-            <Text style={styles.header}>Notifications</Text>
+            <Text style={[styles.header, { color: colors.text }]}>
+              Notifications
+            </Text>
           </View>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
 
         <View style={{ alignItems: "center", justifyContent: "center" }}>
           <Pressable
-            onPress={() => navigation.navigate("TestNotification")}
-            style={styles.testButton}
+            onPress={triggerTestNotification}
+            style={[styles.testButton, { backgroundColor: colors.primary }]}
           >
             <Text style={styles.testButtonText}>Test Notification</Text>
           </Pressable>
@@ -137,14 +164,16 @@ const NotificationsScreen = ({ navigation }) => {
           />
         )}
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
-    backgroundColor: "#7850bf",
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,
@@ -174,13 +203,12 @@ const styles = StyleSheet.create({
   },
   testButton: {
     marginTop: 5,
-    padding: 5,
-    backgroundColor: "#7850bf20",
+    padding: 10,
     borderRadius: 5,
   },
   testButtonText: {
-    color: "#7850bf",
-    fontSize: 12,
+    color: "#fff",
+    fontSize: 14,
   },
   listContent: {
     paddingBottom: 20,

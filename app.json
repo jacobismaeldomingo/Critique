@@ -23,7 +23,7 @@
             "image": "./assets/icons/splash-icon-dark.png",
             "backgroundColor": "#000000"
           },
-          "imageWidth": 800
+          "imageWidth": 200
         }
       ],
       [
@@ -54,7 +54,13 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.jacobdomingo.filmdiaryapp",
-      "googleServicesFile": "./android/google-services.json"
+      "googleServicesFile": "./android/app/google-services.json",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyASxi5UgDU5ZaiB-Tgv6oRfKUrhaRWSGKE"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

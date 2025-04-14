@@ -6,13 +6,15 @@ import {
   Pressable,
   FlatList,
   Text,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import { ThemeContext } from "../../components/ThemeContext";
 import { getTheme } from "../../components/theme";
 
 const PhotoGalleryScreen = ({ navigation, route }) => {
-  const { photos, onAddPhoto, onViewPhoto, showId, type, onAddFromGallery } =
+  const { photos, showId, type, onAddPhoto, onAddFromGallery, onViewPhoto } =
     route.params;
 
   const { theme } = useContext(ThemeContext);
@@ -28,7 +30,7 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
   );
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -55,13 +57,25 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
           </Text>
           <View style={styles.headerButtons}>
             <Pressable
-              style={[styles.button, { backgroundColor: colors.camera }]}
+              style={({ pressed }) => [
+                styles.button,
+                {
+                  backgroundColor: colors.camera,
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}
               onPress={onAddPhoto}
             >
               <Ionicons name="camera-outline" size={24} color="white" />
             </Pressable>
             <Pressable
-              style={[styles.button, { backgroundColor: colors.camera }]}
+              style={({ pressed }) => [
+                styles.button,
+                {
+                  backgroundColor: colors.camera,
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}
               onPress={onAddFromGallery}
             >
               <Ionicons name="image-outline" size={24} color="white" />
@@ -102,13 +116,16 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
           </View>
         )}
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   StyleSheet,
@@ -23,7 +23,7 @@ const PhotoViewerScreen = ({ navigation, route }) => {
 
   // Set the onDeletePhoto callback when the screen is focused
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const handleDeletePhoto = async (photoToDelete) => {
         try {
           await deletePhoto(

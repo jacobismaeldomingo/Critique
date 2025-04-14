@@ -1,5 +1,6 @@
 // App.js - Navigation Page
 import React, { useEffect, useState, useRef, useContext } from "react";
+import { Platform } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
@@ -38,13 +39,11 @@ import InProgressListScreen from "./src/screens/watchlists/InProgressListScreen.
 import PlanToWatchListScreen from "./src/screens/watchlists/PlanToWatchListScreen.js";
 import MapScreen from "./src/screens/shows/MapScreen.js";
 import PhotoGalleryScreen from "./src/screens/camera/PhotoGalleryScreen.js";
-import CameraScreen from "./src/screens/camera/CameraScreen.js";
 import PhotoViewerScreen from "./src/screens/camera/PhotoViewerScreen.js";
 import NotificationsScreen from "./src/screens/settings/NotificationsScreen.js";
 import AboutScreen from "./src/screens/settings/AboutScreen.js";
 import PopularListScreen from "./src/screens/showlists/PopularListScreen.js";
 import NowPlayingListScreen from "./src/screens/showlists/NowPlayingListScreen.js";
-import TestNotification from "./src/components/TestNotifications";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -89,7 +88,14 @@ const MainTabs = () => {
         },
         tabBarStyle: {
           backgroundColor: colors.headerBackground,
+          height: 70,
           paddingTop: 10,
+          position: "absolute",
+          paddingBottom: Platform.OS === "android" ? 20 : 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
         },
         headerShown: false,
         tabBarActiveTintColor: "#FFFFFF",
@@ -133,9 +139,7 @@ const AppStack = () => {
       <Stack.Screen name="PlanToWatchList" component={PlanToWatchListScreen} />
       <Stack.Screen name="Map" component={MapScreen} />
       <Stack.Screen name="PhotoGallery" component={PhotoGalleryScreen} />
-      <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="PhotoViewer" component={PhotoViewerScreen} />
-      <Stack.Screen name="TestNotification" component={TestNotification} />
     </Stack.Navigator>
   );
 };

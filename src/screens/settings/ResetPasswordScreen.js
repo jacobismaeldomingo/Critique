@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  Platform,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -45,7 +47,7 @@ const ResetPasswordScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -131,14 +133,16 @@ const ResetPasswordScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Send Email</Text>
         </Pressable>
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
-    backgroundColor: "#7850bf",
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,

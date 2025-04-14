@@ -278,7 +278,7 @@ const LoginScreen = ({ navigation }) => {
         <View style={[styles.itemBorder, { borderBottomColor: colors.gray }]} />
       </View>
 
-      {/* <GoogleSignInButton colors={colors} /> */}
+      <GoogleSignInButton colors={colors} />
     </View>
   );
 };

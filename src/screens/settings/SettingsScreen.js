@@ -1,6 +1,15 @@
 // screens/SettingsScreen.js
 import React, { useContext } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Switch } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Switch,
+  Platform,
+  SafeAreaView,
+} from "react-native";
 import { signOut } from "firebase/auth";
 import { firebase_auth } from "../../../firebaseConfig";
 import { Ionicons } from "react-native-vector-icons";
@@ -43,7 +52,7 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <View
         style={[
           styles.upperContainer,
@@ -261,13 +270,16 @@ const SettingsScreen = ({ navigation }) => {
           </Pressable>
         </View>
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: 60,
+    paddingBottom: Platform.select({
+      ios: 60,
+      android: 20,
+    }),
   },
   container: {
     flex: 1,
