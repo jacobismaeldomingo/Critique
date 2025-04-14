@@ -2,6 +2,10 @@
 const API_KEY = "85735e5d5dea33644bc4906ef03a0c44";
 const BASE_URL = "https://api.themoviedb.org/3";
 
+/**
+ * Fetches detailed information about a specific movie.
+ * @param {string} movieId - The ID of the movie to fetch.
+ */
 export const fetchMovieDetails = async (movieId) => {
   const response = await fetch(
     `${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`
@@ -10,12 +14,21 @@ export const fetchMovieDetails = async (movieId) => {
   return data;
 };
 
+/**
+ * Fetches detailed information about a specific TV series.
+ * @param {string} seriesId - The ID of the TV series to fetch.
+ */
 export const fetchTVSeriesDetails = async (seriesId) => {
   const response = await fetch(`${BASE_URL}/tv/${seriesId}?api_key=${API_KEY}`);
   const data = await response.json();
   return data;
 };
 
+/**
+ * Fetches information for a specific season of a TV series.
+ * @param {string} seriesId - The ID of the TV series.
+ * @param {number} seasonNumber - The season number to fetch.
+ */
 export const fetchTVSeriesSeason = async (seriesId, seasonNumber) => {
   const response = await fetch(
     `${BASE_URL}/tv/${seriesId}/season/${seasonNumber}?api_key=${API_KEY}`
@@ -24,6 +37,10 @@ export const fetchTVSeriesSeason = async (seriesId, seasonNumber) => {
   return data;
 };
 
+/**
+ * Searches for movies that match the given query string.
+ * @param {string} query - The search query (movie title).
+ */
 export const searchMovies = async (query) => {
   const response = await fetch(
     `${BASE_URL}/search/movie?api_key=${API_KEY}&query=${query}`
@@ -32,6 +49,10 @@ export const searchMovies = async (query) => {
   return data.results;
 };
 
+/**
+ * Searches for TV series that match the given query string.
+ * @param {string} query - The search query (series title).
+ */
 export const searchTVSeries = async (query) => {
   const response = await fetch(
     `${BASE_URL}/search/tv?api_key=${API_KEY}&query=${query}`
@@ -40,6 +61,10 @@ export const searchTVSeries = async (query) => {
   return data.results;
 };
 
+/**
+ * Fetches a list of trending movies for the week.
+ * @param {number} [page=1] - The page number for pagination.
+ */
 export const fetchTrendingMovies = async (page = 1) => {
   const response = await fetch(
     `${BASE_URL}/trending/movie/week?api_key=${API_KEY}&page=${page}`
@@ -51,6 +76,10 @@ export const fetchTrendingMovies = async (page = 1) => {
   }));
 };
 
+/**
+ * Fetches a list of trending TV series for the week.
+ * @param {number} [page=1] - The page number for pagination.
+ */
 export const fetchTrendingTVSeries = async (page = 1) => {
   const response = await fetch(
     `${BASE_URL}/trending/tv/week?api_key=${API_KEY}&page=${page}`
@@ -63,6 +92,10 @@ export const fetchTrendingTVSeries = async (page = 1) => {
   return series;
 };
 
+/**
+ * Fetches a list of popular movies, filtering out adult content.
+ * @param {number} [page=1] - The page number for pagination.
+ */
 export const fetchPopularMovies = async (page = 1) => {
   const response = await fetch(
     `${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${page}`
@@ -80,6 +113,10 @@ export const fetchPopularMovies = async (page = 1) => {
   return movies;
 };
 
+/**
+ * Fetches a list of popular TV series.
+ * @param {number} [page=1] - The page number for pagination.
+ */
 export const fetchPopularTVSeries = async (page = 1) => {
   const response = await fetch(
     `${BASE_URL}/tv/popular?api_key=${API_KEY}&page=${page}`
@@ -92,6 +129,10 @@ export const fetchPopularTVSeries = async (page = 1) => {
   return series;
 };
 
+/**
+ * Fetches a list of movies that are currently playing in theaters.
+ * @param {number} [page=1] - The page number for pagination.
+ */
 export const fetchNowPlaying = async (page = 1) => {
   const response = await fetch(
     `${BASE_URL}/movie/now_playing?api_key=${API_KEY}&page=${page}`
@@ -104,6 +145,7 @@ export const fetchNowPlaying = async (page = 1) => {
   return movies;
 };
 
+// Returns a hardcoded list of genres along with their associated color codes.
 export const fetchGenres = async () => {
   return (genres = [
     { id: 28, name: "Action", color: "#FF5733" },
@@ -136,6 +178,10 @@ export const fetchGenres = async () => {
   ]);
 };
 
+/**
+ * Fetches the list of streaming providers for a specific movie in Canada.
+ * @param {string} movieId - The ID of the movie to fetch providers for.
+ */
 export const fetchMoviesProviders = async (movieId) => {
   try {
     const response = await fetch(
@@ -167,6 +213,10 @@ export const fetchMoviesProviders = async (movieId) => {
   }
 };
 
+/**
+ * Fetches the cast list of a specific movie.
+ * @param {string} movieId - The ID of the movie to fetch the cast for.
+ */
 export const fetchMovieCast = async (movieId) => {
   try {
     const response = await fetch(
@@ -202,6 +252,10 @@ export const fetchMovieCast = async (movieId) => {
 //   }
 // };
 
+/**
+ * Fetches streaming providers for a specific TV series in Canada.
+ * @param {number} seriesId - The TMDB ID of the TV series.
+ */
 export const fetchTVSeriesProviders = async (seriesId) => {
   try {
     const response = await fetch(
@@ -221,6 +275,10 @@ export const fetchTVSeriesProviders = async (seriesId) => {
   }
 };
 
+/**
+ * Fetches cast information for a specific TV series.
+ * @param {number} seriesId - The TMDB ID of the TV series.
+ */
 export const fetchTVSeriesCast = async (seriesId) => {
   try {
     const response = await fetch(
@@ -247,6 +305,11 @@ export const fetchTVSeriesCast = async (seriesId) => {
 //   }
 // };
 
+/**
+ * Fetches detailed information about a specific season of a TV series.
+ * @param {number} seriesId - The TMDB ID of the TV series.
+ * @param {number} seasonNumber - The season number to fetch.
+ */
 export const fetchSeason = async (seriesId, seasonNumber) => {
   try {
     const response = await fetch(
@@ -259,6 +322,11 @@ export const fetchSeason = async (seriesId, seasonNumber) => {
   }
 };
 
+/**
+ * Fetches a list of movies based on selected genre IDs.
+ * @param {Array<number>} genres - An array of genre IDs.
+ * @param {number} [page=1] - Page number for pagination.
+ */
 export const fetchMoviesByGenres = async (genres, page = 1) => {
   try {
     if (!genres || genres.length === 0) {
@@ -291,6 +359,11 @@ export const fetchMoviesByGenres = async (genres, page = 1) => {
   }
 };
 
+/**
+ * Fetches a list of TV series based on selected genre IDs.
+ * @param {Array<number>} genres - An array of genre IDs.
+ * @param {number} [page=1] - Page number for pagination.
+ */
 export const fetchTVSeriesByGenres = async (genres, page = 1) => {
   try {
     if (!genres || genres.length === 0) {
@@ -323,6 +396,10 @@ export const fetchTVSeriesByGenres = async (genres, page = 1) => {
   }
 };
 
+/**
+ * Fetches trailer videos for a specific movie.
+ * @param {number} movieId - The TMDB ID of the movie.
+ */
 export const fetchMovieVideos = async (movieId) => {
   try {
     const response = await fetch(
@@ -338,6 +415,10 @@ export const fetchMovieVideos = async (movieId) => {
   }
 };
 
+/**
+ * Fetches trailer videos for a specific TV series.
+ * @param {number} seriesId - The TMDB ID of the TV series.
+ */
 export const fetchTVSeriesVideos = async (seriesId) => {
   try {
     const response = await fetch(
@@ -353,6 +434,10 @@ export const fetchTVSeriesVideos = async (seriesId) => {
   }
 };
 
+/**
+ * Checks for new releases: latest season/episode for TV shows or release date for movies.
+ * @param {Object} mediaItem - The media object containing `id` and `type` ("tv" or "movie").
+ */
 export async function checkForNewReleases(mediaItem) {
   try {
     if (mediaItem.type === "tv") {

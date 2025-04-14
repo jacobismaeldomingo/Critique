@@ -17,7 +17,16 @@ import {
 import { MAPS_API_KEY } from "../../firebaseConfig";
 import * as FileSystem from "expo-file-system";
 
-// Save a new movie or TV series to the user's collection.
+/**
+ * Saves a movie or TV series to the user's watchlist in Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {object} item - The movie or TV series object.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @param {string} category - The category to save under (e.g. "Watched", "Plan to Watch").
+ * @param {number} [rating=0] - User's rating for the item.
+ * @param {string} [review=""] - User's review for the item.
+ */
 export const saveToWatchList = async (
   userId,
   item,
@@ -49,6 +58,14 @@ export const saveToWatchList = async (
   }
 };
 
+/**
+ * Saves the location where the user watched a show using Google Places API and stores it in Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} showId - The ID of the movie or series.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @param {object} location - An object containing latitude, longitude, and title of the place.
+ */
 export const saveWatchLocation = async (userId, showId, type, location) => {
   try {
     if (!location || !location.latitude || !location.longitude) {
@@ -107,7 +124,14 @@ export const saveWatchLocation = async (userId, showId, type, location) => {
   }
 };
 
-// Save watched episodes to Firestore
+/**
+ * Saves a list of watched episodes for a specific season of a TV series in Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} seriesId - The ID of the TV series.
+ * @param {number} seasonNumber - The season number.
+ * @param {Array<number>} watchedEps - An array of watched episode numbers.
+ */
 export const saveWatchedEpisodes = async (
   userId,
   seriesId,
@@ -132,7 +156,13 @@ export const saveWatchedEpisodes = async (
   await setDoc(docRef, { watchedEpisodes: newWatchedData }, { merge: true });
 };
 
-// Get watched episodes from Firestore
+/**
+ * Retrieves watched episodes for a TV series from Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} seriesId - The ID of the TV series.
+ * @returns {Promise<object>} - An object containing watched episodes by season.
+ */
 export const getWatchedEpisodes = async (userId, seriesId) => {
   const docRef = doc(db, "users", userId, "tvSeries", seriesId.toString());
   const snapshot = await getDoc(docRef);
@@ -144,7 +174,13 @@ export const getWatchedEpisodes = async (userId, seriesId) => {
   return {};
 };
 
-// Get all saved movies or TV series for a user.
+/**
+ * Retrieves all saved movies or TV series for a user from Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @returns {Promise<Array<object>>} - An array of saved items.
+ */
 export const getSavedShows = async (userId, type) => {
   try {
     const showsRef = collection(db, "users", userId, type);
@@ -160,7 +196,13 @@ export const getSavedShows = async (userId, type) => {
   }
 };
 
-// Get all saved movies or TV series for a user that they have watched already.
+/**
+ * Retrieves all watched movies or TV series for a user (i.e., category === "Watched").
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @returns {Promise<Array<object>>} - An array of watched items.
+ */
 export const getWatchedShows = async (userId, type) => {
   try {
     const showsRef = collection(db, "users", userId, type);
@@ -177,19 +219,40 @@ export const getWatchedShows = async (userId, type) => {
   }
 };
 
+/**
+ * Retrieves detailed movie data for a user from Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} movieId - The ID of the movie.
+ * @returns {Promise<object|null>} - The movie data or null if not found.
+ */
 export const getMovieData = async (userId, movieId) => {
   const movieRef = doc(db, `users/${userId}/movies`, movieId.toString());
   const snapshot = await getDoc(movieRef);
   return snapshot.exists() ? snapshot.data() : null;
 };
 
+/**
+ * Retrieves detailed TV series data for a user from Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} seriesId - The ID of the TV series.
+ * @returns {Promise<object|null>} - The TV series data or null if not found.
+ */
 export const getTVSeriesData = async (userId, seriesId) => {
   const seriesRef = doc(db, `users/${userId}/tvSeries`, seriesId.toString());
   const snapshot = await getDoc(seriesRef);
   return snapshot.exists() ? snapshot.data() : null;
 };
 
-// Update the progress, review, or rating for a movie or TV series.
+/**
+ * Updates the progress, rating, or review for a saved movie or TV series in Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} showId - The ID of the movie or series.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @param {object} data - Object containing fields to update (e.g., progress, rating, review).
+ */
 export const updateShowProgress = async (userId, showId, type, data) => {
   try {
     const itemRef = doc(db, `users/${userId}/${type}`, showId.toString());
@@ -200,6 +263,14 @@ export const updateShowProgress = async (userId, showId, type, data) => {
   }
 };
 
+/**
+ * Fetches the rating for a saved movie or TV series from Firestore.
+ *
+ * @param {string} userId - The ID of the user.
+ * @param {string|number} showId - The ID of the movie or series.
+ * @param {string} type - Either "movies" or "tvSeries".
+ * @returns {Promise<number>} - The rating if it exists, or 0 by default.
+ */
 export const fetchRatings = async (userId, showId, type) => {
   try {
     const ratingRef = doc(db, `users/${userId}/${type}`, showId.toString());
