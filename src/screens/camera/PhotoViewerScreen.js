@@ -16,7 +16,7 @@ import { deletePhoto } from "../../services/firestore";
 const { width, height } = Dimensions.get("window");
 
 const PhotoViewerScreen = ({ navigation, route }) => {
-  const { photo, index, photos, showId } = route.params;
+  const { photo, index, photos, showId, type } = route.params;
   const [currentIndex, setCurrentIndex] = useState(index);
   const [currentPhotos, setCurrentPhotos] = useState(photos);
   const [onDeletePhoto, setOnDeletePhoto] = useState(null);
@@ -29,7 +29,7 @@ const PhotoViewerScreen = ({ navigation, route }) => {
           await deletePhoto(
             firebase_auth.currentUser.uid,
             showId,
-            "movies",
+            type,
             photoToDelete
           );
 

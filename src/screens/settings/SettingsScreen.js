@@ -1,5 +1,5 @@
 // screens/SettingsScreen.js
-import React, { useContext } from "react";
+import React, { useContext, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   StyleSheet,
   Alert,
   Switch,
-  Platform,
+  Animated,
   SafeAreaView,
+  Easing,
 } from "react-native";
 import { signOut } from "firebase/auth";
 import { firebase_auth } from "../../../firebaseConfig";
@@ -21,6 +22,33 @@ const SettingsScreen = ({ navigation }) => {
     useContext(ThemeContext);
   const colors = getTheme(theme);
   const isDarkMode = theme === "dark";
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+  const statsScale = useRef(new Animated.Value(0.8)).current;
+
+  // Start animations when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+      Animated.spring(statsScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -52,39 +80,33 @@ const SettingsScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
         style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
         ]}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.headerContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons
-              name="chevron-back-outline"
-              size={28}
-              color={colors.icon}
-              style={{ marginRight: 50 }}
-              opacity={colors.opacity}
-            />
-          </Pressable>
-          <View style={styles.headerWrapper}>
-            <Text style={[styles.header, { color: colors.text }]}>
-              Settings
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
+      >
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back-outline" size={28} color="#fff" />
+        </Pressable>
 
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>Settings</Text>
+        <View style={{ width: 28 }} />
+      </Animated.View>
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
         <View style={{ paddingHorizontal: 5 }}>
           {/* Notifications Section */}
           <Text style={[styles.sectionHeader, { color: colors.text }]}>
@@ -275,35 +297,24 @@ const SettingsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: Platform.select({
-      ios: 60,
-      android: 20,
-    }),
-  },
   container: {
     flex: 1,
-    padding: 16,
-  },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  headerWrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
   },
   header: {
-    fontSize: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
+  },
+  headerTitle: {
+    fontSize: 22,
     fontWeight: "bold",
   },
-  divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 10,
+  content: {
+    flex: 1,
+    padding: 16,
   },
   sectionHeader: {
     fontSize: 22,

@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 10,
     paddingTop: 20,
   },
@@ -622,10 +622,6 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: "center",
     marginVertical: 20,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 15,
   },
   editButton: {
     paddingVertical: 12,

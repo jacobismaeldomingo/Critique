@@ -9,7 +9,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import { updateShowProgress } from "../services/firestore";
+import { updateShowProgress, fetchRatings } from "../services/firestore";
 import { firebase_auth } from "../../firebaseConfig";
 import { Rating } from "@kolking/react-native-rating";
 import { ThemeContext } from "./ThemeContext";

@@ -473,6 +473,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
       index,
       photos,
       showId,
+      type: "tvSeries",
     });
   };
 
@@ -540,7 +541,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
 
         // Save the photo metadata in Firestore (using Cloudinary URL)
         const userId = firebase_auth.currentUser.uid;
-        await savePhotoToFirestore(userId, showId, "movies", {
+        await savePhotoToFirestore(userId, showId, "tvSeries", {
           id: photoId,
           imageUrl: secure_url,
           public_id: public_id,
@@ -570,7 +571,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
       await deletePhoto(
         firebase_auth.currentUser.uid,
         showId,
-        "movies",
+        "tvSeries",
         photoToDelete
       );
 
@@ -1314,7 +1315,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 10,
     paddingTop: 20,
   },

@@ -225,10 +225,7 @@ const WatchedListScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   upperContainer: {
-    paddingBottom: Platform.select({
-      ios: 60,
-      android: 20,
-    }),
+    paddingBottom: 20,
   },
   container: {
     flex: 1,

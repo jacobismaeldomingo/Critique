@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import {
   View,
   Image,
@@ -6,8 +6,9 @@ import {
   Pressable,
   FlatList,
   Text,
-  Platform,
+  Animated,
   SafeAreaView,
+  Easing,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import { ThemeContext } from "../../components/ThemeContext";
@@ -20,6 +21,33 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+  const statsScale = useRef(new Animated.Value(0.8)).current;
+
+  // Start animations when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+      Animated.spring(statsScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const renderPhoto = ({ item, index }) => (
     <Pressable
       style={styles.photoContainer}
@@ -30,60 +58,58 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
         style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
         ]}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.headerContainer}>
-          <Pressable onPress={() => navigation.goBack()}>
-            <Ionicons
-              name="chevron-back-outline"
-              size={28}
-              color={colors.icon}
-              opacity={colors.opacity}
-            />
-          </Pressable>
-          <Text
-            style={[
-              styles.galleryTitle,
-              { color: colors.text, opacity: colors.opacity },
-            ]}
-          >
-            Photos
-          </Text>
-          <View style={styles.headerButtons}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                {
-                  backgroundColor: colors.camera,
-                  opacity: pressed ? 0.6 : 1,
-                },
-              ]}
-              onPress={onAddPhoto}
-            >
-              <Ionicons name="camera-outline" size={24} color="white" />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                {
-                  backgroundColor: colors.camera,
-                  opacity: pressed ? 0.6 : 1,
-                },
-              ]}
-              onPress={onAddFromGallery}
-            >
-              <Ionicons name="image-outline" size={24} color="white" />
-            </Pressable>
-          </View>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
+      >
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back-outline" size={28} color="#fff" />
+        </Pressable>
 
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>Photos</Text>
+        <View style={styles.headerButtons}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              {
+                backgroundColor: colors.camera,
+                opacity: pressed ? 0.6 : 1,
+              },
+            ]}
+            onPress={onAddPhoto}
+          >
+            <Ionicons name="camera-outline" size={24} color="white" />
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              {
+                backgroundColor: colors.camera,
+                opacity: pressed ? 0.6 : 1,
+              },
+            ]}
+            onPress={onAddFromGallery}
+          >
+            <Ionicons name="image-outline" size={24} color="white" />
+          </Pressable>
+        </View>
+      </Animated.View>
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
         {photos && photos.length > 0 ? (
           <FlatList
             data={photos}
@@ -121,32 +147,25 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: Platform.select({
-      ios: 60,
-      android: 20,
-    }),
-  },
   container: {
     flex: 1,
-    padding: 16,
   },
-  headerContainer: {
-    paddingHorizontal: 5,
-    paddingBottom: 5,
+  header: {
     flexDirection: "row",
-    marginBottom: 5,
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
   },
-  divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 10,
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginLeft: 50,
   },
-  galleryTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginLeft: 55,
+  content: {
+    flex: 1,
+    padding: 16,
   },
   headerButtons: {
     flexDirection: "row",

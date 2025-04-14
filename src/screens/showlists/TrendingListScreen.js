@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   ImageBackground,
   ActivityIndicator,
   Dimensions,
-  Platform,
+  Animated,
   SafeAreaView,
+  Easing,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
 import {
@@ -37,6 +38,33 @@ const TrendingListScreen = ({ route }) => {
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(30)).current;
+  const statsScale = useRef(new Animated.Value(0.8)).current;
+
+  // Start animations when component mounts
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+      Animated.spring(statsScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   // Fetch movies or TV shows based on type (supports pagination)
   const loadShows = async () => {
@@ -117,42 +145,37 @@ const TrendingListScreen = ({ route }) => {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <Animated.View
         style={[
-          styles.upperContainer,
-          { backgroundColor: colors.headerBackground },
+          styles.header,
+          {
+            backgroundColor: colors.headerBackground,
+            opacity: fadeAnim,
+          },
         ]}
-      />
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.headerContainer}>
-          <Pressable
-            style={({ pressed }) => [
-              {
-                opacity: pressed ? 0.5 : 1,
-              },
-            ]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons
-              name="chevron-back-outline"
-              size={28}
-              color={colors.icon}
-              opacity={colors.opacity}
-            />
-          </Pressable>
-          <View style={styles.headerWrapper}>
-            <Text
-              style={[
-                styles.header,
-                { color: colors.text, opacity: colors.opacity },
-              ]}
-            >
-              Trending {type === "movies" ? "Movies" : "TV Series"}
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.divider, { borderBottomColor: colors.gray }]} />
+      >
+        <Pressable
+          style={({ pressed }) => [
+            {
+              opacity: pressed ? 0.5 : 1,
+            },
+          ]}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="chevron-back-outline" size={28} color="#fff" />
+        </Pressable>
+
+        <Text style={[styles.headerTitle, { color: "#fff" }]}>
+          Trending {type === "movies" ? "Movies" : "TV Series"}
+        </Text>
+        <View style={{ width: 28 }} />
+      </Animated.View>
+      <View
+        style={[styles.mainContent, { backgroundColor: colors.background }]}
+      >
         <FlatList
           data={shows}
           renderItem={renderShowItem}
@@ -171,38 +194,24 @@ const TrendingListScreen = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
-  upperContainer: {
-    paddingBottom: Platform.select({
-      ios: 60,
-      android: 20,
-    }),
-  },
-
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
-  },
-  headerContainer: {
-    padding: 5,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  headerWrapper: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
   },
   header: {
-    fontSize: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    paddingTop: 20,
+  },
+  headerTitle: {
+    fontSize: 22,
     fontWeight: "bold",
   },
-  divider: {
-    borderBottomColor: "black",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    marginBottom: 15,
+  mainContent: {
+    flex: 1,
+    padding: 16,
   },
   showItem: {
     marginBottom: 20,
