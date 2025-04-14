@@ -1,3 +1,4 @@
+// screens/shows/TVSeriesDetailsScreen.js
 import React, { useState, useCallback, useContext, useRef } from "react";
 import {
   View,
@@ -109,6 +110,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     ]).start();
   };
 
+  // Executes animations on entry and loads tv series details
   useFocusEffect(
     useCallback(() => {
       const loadTVSeriesDetails = async () => {
@@ -203,6 +205,8 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }, [showId])
   );
 
+  // Saves or updates the series details to the watchlist. If the series is already added,
+  // it updates the progress; otherwise, it adds the series to the list.
   const handleSaveTVSeries = async () => {
     if (!category) {
       Alert.alert("Please select a category first before adding to list.");
@@ -236,6 +240,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Renders a single provider item with an animated press effect, showing the provider's logo.
+   * @param {object} item - Show object containing information of provider's data
+   */
   const renderProviderItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -258,6 +266,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  /**
+   * Renders a single cast member’s profile with an animated press effect, showing their profile image, name, and role.
+   * @param {object} item - Show object containing information of cast
+   */
   const renderCastItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -288,6 +300,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  /**
+   * Renders a single season poster with an animated press effect, also shows user's watch progress.
+   * @param {object} item - Show object containing information of season
+   */
   const renderSeasonItem = ({ item }) => {
     const seasonKey = `Season ${item.season_number}`;
     const watched = watchedEpisodes[seasonKey]?.length || 0;
@@ -351,6 +367,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  /**
+   * Renders a video item with an animated press effect, displaying a YouTube player for the video.
+   * @param {object} item - Show object containing information of video data
+   */
   const renderVideoItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -379,20 +399,28 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  // Calculates the number of watched seasons
   const watchedSeasons = seasons.filter((season) => {
     const key = `Season ${season.season_number}`;
     const watchedEpsForSeason = watchedEpisodes[key] || [];
     return watchedEpsForSeason.length === season.episode_count;
   }).length;
 
+  // Calculates the number of watched episodes
   const watchedEpisodesCount = Object.values(watchedEpisodes)
     .flat()
     .filter(Boolean).length;
 
+  // Generates a unique ID using the current timestamp and a random string.
   const generateId = () => {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
   };
 
+  /**
+   * Uploads the taken photo to Cloudinary, saves metadata to Firestore, and adds the photo to the local state and device gallery.
+   * @param {string} photoUri - URI of the taken photo
+   * @returns
+   */
   const onPhotoTaken = async (photoUri) => {
     try {
       setPhotoLoading(true);
@@ -437,6 +465,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  // Requests camera permissions, takes a photo, and then processes the photo by uploading it and saving it to Firestore.
   const handleTakePhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -466,7 +495,13 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  // Function to view a photo in full screen
+  /**
+   * Navigates to a photo viewer screen with the selected photo and its metadata.
+   * @param {object} photo - photo data
+   * @param {number} index - index of the photo
+   * @param {array} photos - array of all photos
+   * @param {string} showId - ID of the show
+   */
   const handleViewPhoto = (photo, index, photos, showId) => {
     navigation.navigate("PhotoViewer", {
       photo,
@@ -477,7 +512,11 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     });
   };
 
-  // Function to edit caption
+  /**
+   * Updates the caption of the given photo and updates the saved data in Firestore.
+   * @param {string} photoId - ID of the photo
+   * @param {string} caption - new caption string
+   */
   const handleEditCaption = async (photoId, caption) => {
     try {
       const updatedPhotos = photos.map((photo) =>
@@ -498,6 +537,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  // Requests permission to access the photo library, selects a photo, uploads it to Cloudinary, and saves its metadata to Firestore.
   const handleAddFromGallery = async () => {
     try {
       // Request permission to access the media library
@@ -565,6 +605,10 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Deletes the specified photo from Firestore and updates the local state by removing the photo.
+   * @param {object} photoToDelete - photo data to be deleted
+   */
   const handleDeletePhoto = async (photoToDelete) => {
     try {
       // Delete the photo from Firestore and the device
@@ -588,6 +632,11 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     }
   };
 
+  /**
+   * Renders a single photo item with an animated press effect, allowing the user to view the photo, edit its caption, or delete it.
+   * @param {object} item - photo data
+   * @param {number} index - index of the photo
+   */
   const renderPhotoItem = ({ item, index }) => {
     const animation = new Animated.Value(1);
     return (
@@ -653,6 +702,7 @@ const TVSeriesDetailsScreen = ({ route, navigation }) => {
     );
   };
 
+  // If there is no series, render the loading component
   if (!tvSeries) {
     return <LoadingItem />;
   }

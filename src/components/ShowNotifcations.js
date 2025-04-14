@@ -1,4 +1,4 @@
-// src/services/showNotifications.js
+// components/showNotifications.js
 import { collection, query, where } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import * as Notifications from "expo-notifications";

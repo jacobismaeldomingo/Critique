@@ -1,4 +1,4 @@
-// components/CategoryModal.js
+// components/RateModal.js
 import React, { useEffect, useState, useContext } from "react";
 import {
   Modal,

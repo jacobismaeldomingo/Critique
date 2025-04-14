@@ -18,6 +18,8 @@ GoogleSignin.configure({
 });
 
 export default function GoogleSignInButton({ colors }) {
+  // Handles Google Sign-In using Firebase and saves user profile if new
+  // Initiates sign-in flow, obtains token, signs in to Firebase, and stores user data
   const handleGoogleSignIn = async () => {
     try {
       console.log("Trying Google Sign in ...");

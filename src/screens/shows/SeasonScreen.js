@@ -1,3 +1,4 @@
+// screens/shows/SeasonScreen.js
 import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
@@ -42,6 +43,7 @@ const SeasonScreen = ({ route, navigation }) => {
   const slideUpAnim = useRef(new Animated.Value(20)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
 
+  // Executes animations on entry and loads series (season and episodes) details
   useEffect(() => {
     const loadData = async () => {
       // Start animations
@@ -139,6 +141,10 @@ const SeasonScreen = ({ route, navigation }) => {
     }));
   };
 
+  /**
+   * Renders a single episode item with an animated effects and dynamic styling when checkbox is checked.
+   * @param {object} item - Show object containing information of episodes's data
+   */
   const renderEpisodeItem = ({ item }) => {
     const animation = new Animated.Value(1);
 
@@ -235,6 +241,7 @@ const SeasonScreen = ({ route, navigation }) => {
     );
   };
 
+  // If there is no season, render the loading component
   if (!season) {
     return <LoadingItem />;
   }

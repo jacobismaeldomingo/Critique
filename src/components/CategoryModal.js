@@ -13,6 +13,10 @@ const CategoryModal = ({ isVisible, onClose, show, type, setIsAdded }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  /**
+   * Handles the selection of watchlist category by the user
+   * @param {string} category - The watchlist category selected by the user.
+   */
   const handleSelectCategory = async (category) => {
     if (firebase_auth.currentUser) {
       await saveToWatchList(

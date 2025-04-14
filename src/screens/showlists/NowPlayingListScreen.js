@@ -1,3 +1,4 @@
+// screens/showlists/NowPlayingListScreen.js
 import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
@@ -26,12 +27,12 @@ const NowPlayingListScreen = ({ route }) => {
   const [loading, setLoading] = useState(false); // Controls loader state
   const navigation = useNavigation();
 
-  const { width } = Dimensions.get("window"); // Get screen width
-
-  const backdropWidth = width * 0.9; // 90% of screen width
-  const backdropHeight = backdropWidth * (10 / 19); // Maintain aspect ratio (similar to 380x200)
-  const posterWidth = backdropWidth * 0.26; // 26% of backdrop width
-  const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 100x150)
+  // Measurements
+  const { width } = Dimensions.get("window");
+  const backdropWidth = width * 0.9;
+  const backdropHeight = backdropWidth * (10 / 19);
+  const posterWidth = backdropWidth * 0.26;
+  const posterHeight = posterWidth * (3 / 2);
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
@@ -82,10 +83,15 @@ const NowPlayingListScreen = ({ route }) => {
     setLoading(false);
   };
 
+  // Fetch first page initially
   useEffect(() => {
-    loadShows(); // Fetch first page initially
+    loadShows();
   }, []);
 
+  /**
+   * Navigates to the details page of a show (either Movie or TV Series) based on the media type.
+   * @param {object} item - Show object containing media type and show ID.
+   */
   const handleShowDetails = (item) => {
     navigation.navigate("MovieDetails", {
       showId: item.id,
@@ -93,6 +99,10 @@ const NowPlayingListScreen = ({ route }) => {
     });
   };
 
+  /**
+   * Renders an individual show item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderShowItem = ({ item }) => (
     <Pressable style={styles.showItem} onPress={() => handleShowDetails(item)}>
       <ImageBackground

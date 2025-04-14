@@ -1,4 +1,4 @@
-// screens/SignupScreen.js
+// screens/authentication/SignupScreen.js
 import React, { useState, useContext } from "react";
 import { View, TextInput, Text, StyleSheet, Pressable } from "react-native";
 import {
@@ -39,19 +39,22 @@ const SignupScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Toggles the visibility of the password input field
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Clears the email input field
   const clearEmail = () => {
     setEmail("");
   };
 
+  // Clears the username input field
   const clearUsername = () => {
     setUsername("");
   };
 
-  // Password validation function
+  // Validates the password based on length and character requirements
   const validatePassword = (password) => {
     setPassword(password);
 
@@ -64,6 +67,8 @@ const SignupScreen = ({ navigation }) => {
     });
   };
 
+  // Handles user signup with Firebase Authentication and stores user profile in Firestore
+  // Performs form validation and username availability check
   const handleSignup = async () => {
     setEmailError("");
     setUsernameError("");
@@ -136,6 +141,7 @@ const SignupScreen = ({ navigation }) => {
     }
   };
 
+  // Renders a visual checkmark or error for each password validation rule
   const renderValidationCheck = (condition, text) => {
     return (
       <View style={styles.passwordCriteria}>

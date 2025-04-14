@@ -1,3 +1,4 @@
+// components/GenreModal.js
 import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
@@ -24,6 +25,7 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Custom colors
   const derivedColors = {
     cardBackground: theme === "dark" ? colors.details : colors.viewAll,
   };
@@ -32,6 +34,7 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Start animations when component mounts and when isVisible changes
   useEffect(() => {
     if (isVisible) {
       Animated.parallel([
@@ -52,6 +55,7 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
     }
   }, [isVisible]);
 
+  // Load genres from the Genre List
   useEffect(() => {
     const loadGenres = async () => {
       const genreList = await fetchGenres();
@@ -60,7 +64,10 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
     loadGenres();
   }, []);
 
-  // Select Genres
+  /**
+   * Function to toggle genre selection in user preferences
+   * @param {string} id - The ID of the genre to toggle
+   */
   const toggleGenreSelection = (id) => {
     setSelectedGenres((prevGenres) =>
       prevGenres.includes(id)
@@ -69,7 +76,7 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
     );
   };
 
-  // Handle save preferences
+  // Function to handle saving user genre preferences to Firestore and local storage
   const handleSavePreferences = async () => {
     console.log("Saving Preferences...");
     const user = firebase_auth.currentUser;
@@ -99,6 +106,10 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
     }
   };
 
+  /**
+   * Function to render each genre option with animations and selection logic
+   * @param {object} item - Genre item data passed from FlatList
+   */
   const renderGenreOption = ({ item }) => {
     const isSelected = selectedGenres.includes(item.id);
     const animation = new Animated.Value(1);
@@ -142,6 +153,7 @@ const GenreModal = ({ isVisible, onClose, onSave }) => {
     );
   };
 
+  // Function to reset selected genres and close the modal
   const handleClose = () => {
     setSelectedGenres([]);
     onClose();

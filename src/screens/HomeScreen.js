@@ -1,3 +1,4 @@
+// screens/HomeScreen.js
 import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
@@ -52,6 +53,7 @@ const HomeScreen = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(20)).current;
 
+  // Entry animations for fade-in and slide-up
   useEffect(() => {
     // Entry animations
     Animated.parallel([
@@ -113,6 +115,7 @@ const HomeScreen = ({ navigation }) => {
     loadData();
   }, []);
 
+  // Handle email verification resend
   const handleResendVerification = async () => {
     const user = auth.currentUser;
     if (user) {
@@ -121,6 +124,10 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Navigates to the details page of a show (either Movie or TV Series) based on the media type.
+   * @param {object} item - Show object containing media type and show ID.
+   */
   const handleShowDetails = async (item) => {
     navigation.navigate(
       item.media_type === "movies" ? "MovieDetails" : "TVSeriesDetails",
@@ -131,6 +138,10 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Renders an individual show item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderShowItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -166,6 +177,10 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Renders an individual featured movie item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderFeaturedItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -206,6 +221,10 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Renders each genre item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of genre buttons.
+   */
   const renderGenreButton = ({ item }) => {
     const animation = new Animated.Value(1);
     return (
@@ -239,6 +258,16 @@ const HomeScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Render section for list of items with header, navigation, and content
+   * @param {string} title - title of the header
+   * @param {object} data - data of the list (movies/series)
+   * @param {string} iconName - name of the icon to use
+   * @param {string} listType - type of list (Now Playing, Popular or Trending)
+   * @param {string} type - either movies or series
+   * @param {object} renderItem - Render item function to display the shows
+   * @returns
+   */
   const renderSection = (title, data, iconName, listType, type, renderItem) => (
     <Animated.View
       style={[

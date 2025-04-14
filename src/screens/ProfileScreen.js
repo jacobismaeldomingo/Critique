@@ -61,7 +61,6 @@ const ProfileScreen = ({ navigation }) => {
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
-
   const derivedColors = {
     cardBackground: theme === "dark" ? colors.details : colors.viewAll,
   };
@@ -148,6 +147,7 @@ const ProfileScreen = ({ navigation }) => {
     }, [isEditing])
   );
 
+  // Fetches genres from an API and updates the genres state.
   useEffect(() => {
     const getGenres = async () => {
       const genreList = await fetchGenres();
@@ -157,7 +157,10 @@ const ProfileScreen = ({ navigation }) => {
     getGenres();
   }, []);
 
-  // Check username availability while typing
+  /**
+   * Checks if the entered username is available by querying the database.
+   * @param {string} username - The username to check for availability.
+   */
   const checkUsernameAvailability = async (username) => {
     if (username.trim() === "") {
       setIsUsernameAvailable(true);
@@ -171,13 +174,19 @@ const ProfileScreen = ({ navigation }) => {
     setIsUsernameAvailable(querySnapshot.empty);
   };
 
-  // Validate phone number format
+  /**
+   * Validates the phone number format using a regex pattern.
+   * @param {string} phone - The phone number to validate.
+   */
   const validatePhoneNumber = (phone) => {
     const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
     return phoneRegex.test(phone);
   };
 
-  // Validate birthday format
+  /**
+   * Validates the birthday format and checks if the date is a valid calendar date.
+   * @param {string} date - The birthday date in the format "YYYY-MM-DD".
+   */
   const validateBirthday = (date) => {
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) return false;
@@ -191,7 +200,7 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
-  // Handle save button click
+  // Validates the profile fields (username, phone number, and birthday) and saves the user's profile to the database if valid.
   const handleSave = async () => {
     let profileErrors = {};
 
@@ -255,6 +264,17 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Renders an editable or non-editable field for the user's profile with appropriate validation error messages.
+   * @param {string} title - The label for the field.
+   * @param {string} value -  The value of the field (e.g., username, phone number).
+   * @param {string} iconName - The name of the icon to display next to the field.
+   * @param {string} fieldName - The name of the field for error checking.
+   * @param {boolean} isEditable - Whether the field is editable.
+   * @param {function|null} onChangeText - Function to handle text input changes (if the field is editable).
+   * @param {string} placeholder - Placeholder text for the input field.
+   * @param {string} keyboardType - The keyboard type for the input field (e.g., "default", "phone-pad").
+   */
   const renderProfileField = (
     title,
     value,
@@ -334,6 +354,12 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Renders a stat card displaying a value with an icon and label.
+   * @param {string} title - The title or label for the stat card.
+   * @param {number|string} value - The value of the stat to display.
+   * @param {string} iconName - The icon to display on the stat card.
+   */
   const renderStatCard = (title, value, iconName) => {
     return (
       <Animated.View
@@ -360,6 +386,7 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
+  // Toggles the editing state for the profile fields.
   const handleEditButton = () => {
     setIsEditing(!isEditing);
     setErrors({});

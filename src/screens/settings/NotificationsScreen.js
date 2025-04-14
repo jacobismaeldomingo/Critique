@@ -1,3 +1,4 @@
+// screens/settings/NotificationsScreen.js
 import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   View,
@@ -11,13 +12,7 @@ import {
   Easing,
 } from "react-native";
 import { Ionicons } from "react-native-vector-icons";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-} from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { db, firebase_auth } from "../../../firebaseConfig";
 import * as Notifications from "expo-notifications";
 import { ThemeContext } from "../../components/ThemeContext";
@@ -58,6 +53,7 @@ const NotificationsScreen = ({ navigation }) => {
     ]).start();
   }, []);
 
+  // Fetches and listens to user's notifications in real-time from Firestore
   useEffect(() => {
     if (!user) return;
 
@@ -85,6 +81,7 @@ const NotificationsScreen = ({ navigation }) => {
     return unsubscribe;
   }, [user]);
 
+  // Renders individual notification item with icon, text, and time
   const renderNotificationItem = ({ item }) => (
     <View style={styles.notificationItem}>
       <View style={styles.notificationIcon}>
@@ -118,6 +115,7 @@ const NotificationsScreen = ({ navigation }) => {
     </View>
   );
 
+  // Schedules a local test notification to appear after 1 second
   const triggerTestNotification = async () => {
     await Notifications.scheduleNotificationAsync({
       content: {

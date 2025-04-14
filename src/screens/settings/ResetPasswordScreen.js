@@ -1,3 +1,4 @@
+// screens/settings/ResetPasswordScreen.js
 import React, { useState, useContext, useRef, useEffect } from "react";
 import {
   View,
@@ -49,6 +50,9 @@ const ResetPasswordScreen = ({ navigation }) => {
     ]).start();
   }, []);
 
+  // Handles sending a password reset email using Firebase Authentication
+  // Redirects to the reset-password page and navigates back to login on success
+  // Reset-password page was created by Jacob Domingo (simple Next.js landing page)
   const handleResetPassword = async () => {
     setError("");
 

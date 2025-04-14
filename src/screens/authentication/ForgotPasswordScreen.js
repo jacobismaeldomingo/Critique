@@ -1,3 +1,4 @@
+// screens/authentication/ForgotPasswordScreen.js
 import React, { useState, useContext } from "react";
 import {
   View,
@@ -20,6 +21,9 @@ const ForgotPasswordScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Handles sending a password reset email using Firebase Authentication
+  // Redirects to the reset-password page and navigates back to login on success
+  // Reset-password page was created by Jacob Domingo (simple Next.js landing page)
   const handleForgotPassword = async () => {
     setError("");
 

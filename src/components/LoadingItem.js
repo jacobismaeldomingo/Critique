@@ -1,3 +1,4 @@
+// components/LoadingItem.js
 import React, { useContext } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { ThemeContext } from "./ThemeContext";

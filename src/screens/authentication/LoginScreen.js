@@ -1,4 +1,4 @@
-// screens/LoginScreen.js
+// screens/authentication/LoginScreen.js
 import React, { useState, useContext } from "react";
 import {
   View,
@@ -39,14 +39,18 @@ const LoginScreen = ({ navigation }) => {
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Toggles the visibility of the password input field
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  // Clears the email/usernamem input field
   const clearEmailOrUsername = () => {
     setEmailOrUsername("");
   };
 
+  // Handles user login with email or username using Firebase Authentication
+  // Validates inputs, resolves username to email if needed, and stores login info
   const handleLogin = async () => {
     setEmailError("");
     setPasswordError("");

@@ -24,19 +24,24 @@ const SearchModal = ({ isVisible, onClose }) => {
   const [genres, setGenres] = useState([]);
   const navigation = useNavigation();
 
-  const { width } = Dimensions.get("window"); // Get screen width
-
-  const posterWidth = width * 0.2; // 20% of screen width
-  const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 80x120)
+  // Measurements
+  const { width } = Dimensions.get("window");
+  const posterWidth = width * 0.2;
+  const posterHeight = posterWidth * (3 / 2);
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Clears the search input and results
   const clearSearch = () => {
     setQuery("");
     setResults([]);
   };
 
+  /**
+   * Handles searching for movies and TV series based on input text
+   * @param {string} text - The search query entered by the user
+   */
   const handleSearch = async (text) => {
     setQuery(text);
     if (text.length > 1) {
@@ -53,6 +58,10 @@ const SearchModal = ({ isVisible, onClose }) => {
     }
   };
 
+  /**
+   * Navigates to the details screen for the selected item (movie or TV series)
+   * @param {object} item - The selected search result item
+   */
   const handleNavigateToDetails = (item) => {
     onClose();
     navigation.navigate(
@@ -64,6 +73,7 @@ const SearchModal = ({ isVisible, onClose }) => {
     );
   };
 
+  // Loads genre list when the component mounts
   useEffect(() => {
     const getGenres = async () => {
       const genreList = await fetchGenres();
@@ -73,12 +83,17 @@ const SearchModal = ({ isVisible, onClose }) => {
     getGenres();
   }, []);
 
+  // Closes the search modal and resets query and results
   const handleClose = async () => {
     setQuery("");
     setResults([]);
     onClose();
   };
 
+  /**
+   * Renders each individual result item in the search list
+   * @param {object} item - The search result item to display
+   */
   const renderResultItem = ({ item }) => (
     <Pressable
       style={styles.resultItem}

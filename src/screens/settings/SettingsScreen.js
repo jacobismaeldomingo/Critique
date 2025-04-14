@@ -50,6 +50,7 @@ const SettingsScreen = ({ navigation }) => {
     ]).start();
   }, []);
 
+  // Prompts the user with a confirmation alert before logging out.
   const handleLogout = async () => {
     Alert.alert(
       "Confirm Logout",
@@ -138,12 +139,10 @@ const SettingsScreen = ({ navigation }) => {
             ]}
           />
 
-          {/* Appearance Section */}
           <Text style={[styles.sectionHeader, { color: colors.text }]}>
             Appearance
           </Text>
 
-          {/* System Theme Toggle */}
           <View style={styles.itemContainer}>
             <View style={styles.itemContent}>
               <Ionicons
@@ -176,7 +175,6 @@ const SettingsScreen = ({ navigation }) => {
             ]}
           />
 
-          {/* Dark Mode Toggle - Disabled if using system theme */}
           <View style={styles.itemContainer}>
             <View style={styles.itemContent}>
               <Ionicons
@@ -215,7 +213,6 @@ const SettingsScreen = ({ navigation }) => {
             ]}
           />
 
-          {/* Security Section */}
           <Text style={[styles.sectionHeader, { color: colors.text }]}>
             Security
           </Text>
@@ -245,7 +242,6 @@ const SettingsScreen = ({ navigation }) => {
             ]}
           />
 
-          {/* About Section */}
           <Text style={[styles.sectionHeader, { color: colors.text }]}>
             Credits & Info
           </Text>
@@ -275,7 +271,6 @@ const SettingsScreen = ({ navigation }) => {
             ]}
           />
 
-          {/* Logout Section */}
           <Pressable
             style={({ pressed }) => [
               { opacity: pressed ? 0.5 : 1 },

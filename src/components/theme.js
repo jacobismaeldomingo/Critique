@@ -1,4 +1,4 @@
-// theme.js
+// components/theme.js
 
 const sharedColors = {
   // Fixed brand colors
@@ -15,6 +15,7 @@ const sharedColors = {
   switchThumbTrue: "#ffffff",
 };
 
+// Light Theme Mode
 export const lightTheme = {
   ...sharedColors,
   background: "#FFFFFF",
@@ -36,11 +37,12 @@ export const lightTheme = {
   grey: "#808080",
 };
 
+// Dark Theme Mode
 export const darkTheme = {
   headerBackground: "#9575CD",
-  primary: "#B39DDB", // Lightened primary for dark backgrounds
-  button: "#9575CD", // Use original primary as button bg
-  secondary: "#606fc7", // Softened secondary
+  primary: "#B39DDB",
+  button: "#9575CD",
+  secondary: "#606fc7",
   error: "#FF6E6E",
   success: "#66BB6A",
   statusBar: "#B39DDB",

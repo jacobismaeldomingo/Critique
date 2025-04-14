@@ -1,3 +1,4 @@
+// screens/showlists/GenreScreen.js
 import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
@@ -39,10 +40,10 @@ const GenreScreen = ({ route }) => {
   const [filteredTVSeries, setFilteredTVSeries] = useState([]);
   const navigation = useNavigation();
 
-  const { width } = Dimensions.get("window"); // Get screen width
-
-  const posterWidth = width * 0.28; // 28% of screen width
-  const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio
+  // Measurements
+  const { width } = Dimensions.get("window");
+  const posterWidth = width * 0.28;
+  const posterHeight = posterWidth * (3 / 2);
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
@@ -74,7 +75,7 @@ const GenreScreen = ({ route }) => {
     ]).start();
   }, []);
 
-  // Initial data loading
+  // Initial data loading - load all movies and series with pagination handling
   useEffect(() => {
     // Reset states when genre changes
     setMovies([]);
@@ -189,6 +190,10 @@ const GenreScreen = ({ route }) => {
     }
   }, [searchQuery, movies, tvSeries]);
 
+  /**
+   * Navigates to the details page of a show (either Movie or TV Series) based on the media type.
+   * @param {object} item - Show object containing media type and show ID.
+   */
   const handleShowDetails = (item) => {
     navigation.navigate(
       item.media_type === "movies" ? "MovieDetails" : "TVSeriesDetails",
@@ -199,6 +204,10 @@ const GenreScreen = ({ route }) => {
     );
   };
 
+  /**
+   * Renders an individual show item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderShowItem = ({ item }) => (
     <View style={{ alignItems: "center", justifyContent: "center" }}>
       <Pressable
@@ -223,6 +232,7 @@ const GenreScreen = ({ route }) => {
     </View>
   );
 
+  // Renders a search bar for searching shows, with a text input and clear button functionality.
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={{ flexDirection: "row", flex: 1, alignItems: "center" }}>

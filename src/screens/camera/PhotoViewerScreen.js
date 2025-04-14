@@ -1,3 +1,4 @@
+// screens/camera/PhotoVieweryScreen.js
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -21,7 +22,7 @@ const PhotoViewerScreen = ({ navigation, route }) => {
   const [currentPhotos, setCurrentPhotos] = useState(photos);
   const [onDeletePhoto, setOnDeletePhoto] = useState(null);
 
-  // Set the onDeletePhoto callback when the screen is focused
+  // Handles deletion of photos when the screen is focused and sets up navigation between photos
   useFocusEffect(
     useCallback(() => {
       const handleDeletePhoto = async (photoToDelete) => {
@@ -63,6 +64,7 @@ const PhotoViewerScreen = ({ navigation, route }) => {
     }, [navigation, showId])
   );
 
+  // Shows a confirmation alert and deletes the current photo if confirmed
   const handleDelete = () => {
     Alert.alert("Delete Photo", "Are you sure you want to delete this photo?", [
       { text: "Cancel", style: "cancel" },
@@ -78,18 +80,21 @@ const PhotoViewerScreen = ({ navigation, route }) => {
     ]);
   };
 
+  // Navigates to the next photo in the list
   const navigateToNext = () => {
     if (currentIndex < currentPhotos.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
+  // Navigates to the previous photo in the list
   const navigateToPrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
 
+  // Gets the currently displayed photo
   const currentPhoto = currentPhotos[currentIndex];
 
   return (

@@ -1,3 +1,4 @@
+// screens/shows/FullCastCrewScreen.js
 import React, { useState, useContext, useRef, useEffect } from "react";
 import {
   View,
@@ -37,6 +38,7 @@ const FullCastCrewScreen = ({ route }) => {
   // Set responsive width and height for the cast image
   const castImageSize = width * 0.16;
 
+  // Start animations when component mounts
   useEffect(() => {
     // Start animations
     fadeAnim.setValue(0);
@@ -107,6 +109,10 @@ const FullCastCrewScreen = ({ route }) => {
       .filter((section) => section.data.length > 0);
   };
 
+  /**
+   * Renders an individual cast item as a pressable component with a profile image.
+   * @param {object} item - Show object containing information of the cast.
+   */
   const renderCastItem = ({ item }) => {
     const animation = new Animated.Value(1);
     return (

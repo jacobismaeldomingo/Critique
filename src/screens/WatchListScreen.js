@@ -1,4 +1,4 @@
-// WatchListScreen - Contains screens for movies and tv series
+// screens/WatchListScreen.js
 import React, {
   useState,
   useCallback,
@@ -27,10 +27,11 @@ import SearchModal from "../components/SearchModal";
 import { ThemeContext } from "../components/ThemeContext";
 import { getTheme } from "../components/theme";
 
+// Measurements
 const { width } = Dimensions.get("window");
-const posterWidth = width * 0.28; // 30% of screen width
-const posterHeight = posterWidth * (16 / 11); // Maintain aspect ratio
-const tabButtonWidth = width * 0.4; // 40% of screen width for each tab
+const posterWidth = width * 0.28;
+const posterHeight = posterWidth * (16 / 11);
+const tabButtonWidth = width * 0.4;
 
 // Memoized list item component to prevent unnecessary re-renders
 const ShowItem = React.memo(({ item, onPress, animation }) => {
@@ -93,6 +94,7 @@ const WatchListScreen = ({ navigation }) => {
     ]).start();
   }, []);
 
+  // Loads saved movies and TV series when the component comes into focus.
   useFocusEffect(
     useCallback(() => {
       const loadSavedShows = async () => {
@@ -116,6 +118,10 @@ const WatchListScreen = ({ navigation }) => {
     }, [])
   );
 
+  /**
+   * Navigates to the details page of a show (either Movie or TV Series) based on the media type.
+   * @param {object} item - Show object containing media type and show ID.
+   */
   const handleShowDetails = useCallback(
     (item) => {
       navigation.navigate(
@@ -129,6 +135,10 @@ const WatchListScreen = ({ navigation }) => {
     [activeTab, navigation]
   );
 
+  /**
+   * Renders an individual show item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderShowItem = useCallback(
     ({ item }) => {
       const animation = new Animated.Value(1);

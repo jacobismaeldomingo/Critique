@@ -1,10 +1,11 @@
+// components/Notifications.js
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { doc, setDoc } from "firebase/firestore";
 import { firebase_auth, db } from "../../firebaseConfig";
 
-/// Set up notification handler
+// Set up notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -13,6 +14,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Request permissions
 async function registerForPushNotificationsAsync() {
   let token;
 

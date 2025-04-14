@@ -1,3 +1,4 @@
+// screens/watchlists/WatchedListScreen.js
 import React, { useState, useCallback, useContext } from "react";
 import {
   View,
@@ -25,16 +26,17 @@ const WatchedListScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("movies");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { width } = Dimensions.get("window"); // Get screen width
-
-  const backdropWidth = width * 0.9; // 90% of screen width
-  const backdropHeight = backdropWidth * (10 / 19); // Maintain aspect ratio (similar to 380x200)
-  const posterWidth = backdropWidth * 0.26; // 26% of backdrop width
-  const posterHeight = posterWidth * (3 / 2); // Maintain 2:3 aspect ratio (similar to 100x150)
+  // Measurements
+  const { width } = Dimensions.get("window");
+  const backdropWidth = width * 0.9;
+  const backdropHeight = backdropWidth * (10 / 19);
+  const posterWidth = backdropWidth * 0.26;
+  const posterHeight = posterWidth * (3 / 2);
 
   const { theme } = useContext(ThemeContext);
   const colors = getTheme(theme);
 
+  // Fetch movies or TV shows based on type (supports pagination)
   useFocusEffect(
     useCallback(() => {
       const loadWatchedShows = async () => {
@@ -60,6 +62,10 @@ const WatchedListScreen = ({ navigation }) => {
     }, [])
   );
 
+  /**
+   * Navigates to the details page of a show (either Movie or TV Series) based on the media type.
+   * @param {object} item - Show object containing media type and show ID.
+   */
   const handleShowDetails = (item) => {
     navigation.navigate(
       activeTab === "movies" ? "MovieDetails" : "TVSeriesDetails",
@@ -70,6 +76,10 @@ const WatchedListScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Renders an individual show item as a pressable component with a poster image.
+   * @param {object} item - Show object containing information of a movie/series.
+   */
   const renderShowItem = ({ item }) => (
     <Pressable style={styles.showItem} onPress={() => handleShowDetails(item)}>
       <ImageBackground
@@ -107,6 +117,12 @@ const WatchedListScreen = ({ navigation }) => {
     </Pressable>
   );
 
+  /**
+   * Filters the in-progress shows (either movies or TV series) based on the search query
+   * @param {string} activeTab - current active tab which determines if movies or TV series are shown
+   * @param {string} searchQuery - the search term input by the user
+   * @returns {array} filteredShows - an array of shows filtered based on the search query
+   */
   const filteredShows = (
     activeTab === "movies" ? watchedMovies : watchedTVSeries
   ).filter(
@@ -115,6 +131,7 @@ const WatchedListScreen = ({ navigation }) => {
       show.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Clears the search query input by resetting the searchQuery state
   const clearSearchQuery = () => {
     setSearchQuery("");
   };

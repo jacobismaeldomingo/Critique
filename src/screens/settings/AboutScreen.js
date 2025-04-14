@@ -1,3 +1,4 @@
+// screens/settings/AboutScreen.js
 import React, { useContext, useRef, useEffect } from "react";
 import {
   View,

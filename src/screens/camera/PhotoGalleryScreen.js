@@ -1,3 +1,4 @@
+// screens/camera/PhotoGalleryScreen.js
 import React, { useContext, useEffect, useRef } from "react";
 import {
   View,
@@ -48,6 +49,7 @@ const PhotoGalleryScreen = ({ navigation, route }) => {
     ]).start();
   }, []);
 
+  // Renders a single photo thumbnail and handles photo view navigation on press
   const renderPhoto = ({ item, index }) => (
     <Pressable
       style={styles.photoContainer}

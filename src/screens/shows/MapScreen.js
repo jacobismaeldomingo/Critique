@@ -1,3 +1,4 @@
+// screens/shows/MapScreen.js
 import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   View,
@@ -63,6 +64,7 @@ const MapScreen = ({ route, navigation }) => {
     ]).start();
   }, []);
 
+  // useEffect hook to fetch and set the user's location
   useEffect(() => {
     const fetchLocation = async () => {
       // Request location permissions
@@ -108,6 +110,7 @@ const MapScreen = ({ route, navigation }) => {
     fetchLocation();
   }, [showId]);
 
+  // Handles searching for a location based on the user's input address.
   const handleSearch = async () => {
     if (address.length < 3) {
       return;
