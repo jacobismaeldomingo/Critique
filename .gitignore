@@ -2,7 +2,11 @@
 
 # dependencies
 node_modules/
+
+#keys
 .env
+/android/app/google-services.json
+/ios/GoogleService-Info.plist
 
 # Expo
 .expo/

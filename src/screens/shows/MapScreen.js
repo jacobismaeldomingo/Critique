@@ -24,8 +24,11 @@ import {
 import Geocoder from "react-native-geocoding";
 import { ThemeContext } from "../../components/ThemeContext";
 import { getTheme } from "../../components/theme";
+import Constants from "expo-constants";
 
-Geocoder.init("AIzaSyASxi5UgDU5ZaiB-Tgv6oRfKUrhaRWSGKE");
+const { GEOCODER_API_KEY } = Constants.expoConfig.extra;
+
+Geocoder.init(GEOCODER_API_KEY);
 
 const MapScreen = ({ route, navigation }) => {
   const { showId, type } = route.params || {};
