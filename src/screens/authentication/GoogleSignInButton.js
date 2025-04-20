@@ -8,13 +8,14 @@ import {
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { firebase_auth, db } from "../../../firebaseConfig.js";
 import { setDoc, doc, getDoc } from "firebase/firestore";
+import Constants from "expo-constants";
+const { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } =
+  Constants.expoConfig.extra;
 
 // Configure Google Sign-In
 GoogleSignin.configure({
-  webClientId:
-    "542453473907-ic8dh5ffa6gf17q5a0e9u0p49fc2dnvn.apps.googleusercontent.com", // From Firebase Console
-  iosClientId:
-    "542453473907-5tlr2aif8kopft2q0bn11p4be0ile9u8.apps.googleusercontent.com", // From GoogleService-Info.plist
+  webClientId: GOOGLE_WEB_CLIENT_ID, // From Firebase Console
+  iosClientId: GOOGLE_IOS_CLIENT_ID, // From GoogleService-Info.plist
 });
 
 export default function GoogleSignInButton({ colors }) {

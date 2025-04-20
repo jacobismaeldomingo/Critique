@@ -2,17 +2,28 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import Constants from "expo-constants";
+
+const {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID,
+  MAPS_API_KEY,
+} = Constants.expoConfig.extra;
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAc8jjpEzHO-ae4JJVw2GqmrG58yDapKZA",
-  authDomain: "filmdiaryapp.firebaseapp.com",
-  projectId: "filmdiaryapp",
-  storageBucket: "filmdiaryapp.firebasestorage.app",
-  messagingSenderId: "542453473907",
-  appId: "1:542453473907:web:4215651267ef3501190006",
+  apiKey: FIREBASE_API_KEY,
+  authDomain: FIREBASE_AUTH_DOMAIN,
+  projectId: FIREBASE_PROJECT_ID,
+  storageBucket: FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+  appId: FIREBASE_APP_ID,
 };
 
-export const MAPS_API_KEY = "AIzaSyASxi5UgDU5ZaiB-Tgv6oRfKUrhaRWSGKE";
+export const MAPS_API = MAPS_API_KEY;
 
 const firebase_app = initializeApp(firebaseConfig);
 const firebase_auth = getAuth(firebase_app);

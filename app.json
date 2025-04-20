@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FilmDiaryApp",
-    "slug": "FilmDiaryApp",
+    "name": "Critique",
+    "slug": "Critique",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/ios-light.png",
